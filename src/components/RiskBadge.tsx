@@ -1,5 +1,5 @@
 import React from 'react'
-import { EstimateAnalysis } from '../data'
+import { EstimateAnalysis } from '../data/analyzeEstimateData'
 
 export const RiskBadge = ({ risk }: { risk: EstimateAnalysis['risk'] }) => {
   switch (risk) {
