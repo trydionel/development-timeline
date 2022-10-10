@@ -1,6 +1,17 @@
 import { chain, sortBy, find } from 'lodash'
 
-export function findTransitions(events) {
+export interface StatusTransition {
+  timestamp: string
+  duration: number
+  ratio: number
+  team?: string
+  from: string
+  statusCategory: Aha.InternalMeaning['values']
+  to?: string
+  color: string
+}
+
+export function findTransitions(events): StatusTransition[] {
   const raw = sortBy(events, "createdAt");
   const typeFilter = [
     "RECORD_REMOVED_FROM_TEAM_WORKFLOW_STATUS",

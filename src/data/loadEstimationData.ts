@@ -1,4 +1,4 @@
-interface EstimatationDataRespose {
+export interface EstimatationDataRespose {
   feature: Aha.Feature
   throughput: {
     timeSeries: any[] // No pre-defined type for this?
@@ -15,6 +15,9 @@ const EstimationDataQuery = `
        text
        value
        units
+     }
+     teamWorkflowStatus {
+      internalMeaning
      }
    }
    throughput: recordEvents(filters: $throughputFilters) {
@@ -51,18 +54,24 @@ const EstimationDataQuery = `
    }
  }
 `
+
 export async function loadEstimationData(record) {
+  const now = new Date()
+
+  // Need this for the throughput query
+  await record.loadAttributes('teamId')
+
   return await aha.graphQuery<EstimatationDataRespose>(EstimationDataQuery,
     {
       variables: {
         id: record.id,
         throughputFilters: {
           createdAt: {
-            gt: "2022-02-01T05:00:00.000Z",
-            lt: "2022-10-16T04:00:00.000Z",
+            gt: new Date(new Date().setDate(now.getDate() - 90)).toISOString(),
+            lt: now.toISOString()
           },
           eventType: ["RECORD_COMPLETED"],
-          teamId: aha.project.id,
+          teamId: record.teamId,
           units: "POINTS",
         },
         transitionFilters: {
