@@ -1,0 +1,42 @@
+{
+  "name": "trydionel.estimate-analysis",
+  "description": "Estimate analysis",
+  "version": "0.0.0",
+  "author": "trydionel",
+  "repository": {
+    "type": "git",
+    "url": "TODO: Add the GitHub URL to your extension in package.json"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/react": "^16.8.0"
+  },
+  "ahaExtension": {
+    "contributes": {
+      "views": {
+        "projectedDuration": {
+          "title": "Projected duration",
+          "entryPoint": "src/views/projectedDuration.js",
+          "host": "attribute",
+          "recordTypes": [
+            "Feature"
+          ]
+        }
+      },
+      "settings": {
+        "estimateUncertainty": {
+          "title": "Estimate uncertainty",
+          "description": "A measure of how much inaccuracy to allow for during estimation (0-100%)",
+          "default": "25",
+          "type": "number",
+          "scope": [
+            "account"
+          ]
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
+}
