@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { analyzeEstimateData } from '../data/analyzeEstimateData'
+import { analyzeEstimateData, EstimateAnalysis } from '../data/analyzeEstimateData'
 import { RiskBadge } from './RiskBadge'
 
 interface ProjectedDurationSettings {
@@ -13,7 +13,7 @@ interface ProjectedDurationProps {
 
 export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) => {
   const [loading, setLoading] = useState(true)
-  const [analysis, setAnalysis] = useState(null)
+  const [analysis, setAnalysis] = useState<EstimateAnalysis | null>(null)
 
   useEffect(() => {
     (async () => {
@@ -32,8 +32,8 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
     return <aha-spinner />
   }
 
-  if (!analysis || !analysis.estimate) {
-    return <div className="ml-1 text-muted">No estimate provided</div>
+  if (!analysis) {
+    return <div className="ml-2 text-muted">Insufficient data</div>
   }
 
   return (
@@ -45,8 +45,8 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
           {analysis.projectedDuration[1].toFixed(1)}d
         </span>
         <span className="ml-1">
-          <aha-tooltip-default-trigger aria-describedby="aha-tooltip-id-l93adl7a3fw99lx88"></aha-tooltip-default-trigger>
-          <aha-tooltip id="aha-tooltip-id-l93adl7a3fw99lx88">
+          <aha-tooltip-default-trigger aria-describedby="projected-duration-tooltip"></aha-tooltip-default-trigger>
+          <aha-tooltip id="projected-duration-tooltip">
             <span>
               Based on team velocity of {analysis.velocity.toFixed(1)}p / day
               and {settings.estimateUncertainty}% estimate uncertainty.

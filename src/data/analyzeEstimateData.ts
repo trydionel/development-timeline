@@ -14,15 +14,22 @@ export interface EstimateAnalysis {
   risk: 'NOT_STARTED' | 'ON_TRACK' | 'NEARING_ESTIMATE' | 'EXCEEDING_ESTIMATE'
 }
 
-export async function analyzeEstimateData(record: Aha.Feature, settings: EstimateAnalysisSettings): Promise<EstimateAnalysis> {
+export async function analyzeEstimateData(record: Aha.Feature, settings: EstimateAnalysisSettings): Promise<EstimateAnalysis | null> {
   const data = await loadEstimationData(record)
   const uncertainty = settings.estimateUncertainty
 
   // Estimate
   const estimate = data.feature.originalEstimate
+  if (!estimate.value) {
+    return null
+  }
 
   // Velocity
   const weeks = data.throughput.timeSeries
+  if (weeks.length === 0) {
+    return null
+  }
+
   const points = weeks.reduce((acc, s) => acc + s.originalEstimate, 0)
   const days = weeks.length * 7
   const velocity = points / days
