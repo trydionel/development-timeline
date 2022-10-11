@@ -37,7 +37,7 @@ export async function analyzeEstimateData(record: Aha.Feature, settings: Estimat
   // Time In Status
   const transitions = findTransitions(data.transitions.raw)
   let milliseconds = transitions.filter(t => t.statusCategory === "IN_PROGRESS").reduce((acc, t) => acc + t.duration, 0)
-  // Include time spend in current status iff in progress
+  // Include time spent in current status iff in progress
   if (data.feature.teamWorkflowStatus.internalMeaning === 'IN_PROGRESS') {
     const last = transitions[transitions.length - 1]
     const duration = +new Date() - Date.parse(last.timestamp)

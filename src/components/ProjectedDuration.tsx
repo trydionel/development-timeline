@@ -33,7 +33,7 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
   }
 
   if (!analysis) {
-    return <div className="ml-2 text-muted">Insufficient data</div>
+    return <div className="ml-2" style={{ color: "var(--theme-accent-icon)" }}>Insufficient data</div>
   }
 
   return (

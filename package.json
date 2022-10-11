@@ -1,11 +1,11 @@
 {
   "name": "trydionel.estimate-analysis",
   "description": "Estimate analysis",
-  "version": "0.0.0",
-  "author": "trydionel",
+  "version": "0.0.1",
+  "author": "Jeff Tucker",
   "repository": {
     "type": "git",
-    "url": "TODO: Add the GitHub URL to your extension in package.json"
+    "url": "https://github.com/trydionel/estimation-analysis"
   },
   "license": "MIT",
   "devDependencies": {

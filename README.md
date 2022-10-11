@@ -4,12 +4,21 @@ Aha! Develop extension that explores techniques for evaluating feature estimates
 
 It provides these contributions:
 
-* Projected duration: A projected range of how long it will take to complete a feature based on its estimate, estimation uncertainty, and team velocity.
-
+* Projected duration: A view contribution showing the projected range of how long it will take to complete a feature based on its estimate, estimation uncertainty, and team velocity.
+* Estimation uncertainty: An account setting to measure how much inaccuracy to allow for during estimation. Represented as a percentage from 0-100%. Higher uncertainty means estimates are less reliable.
 
 ## Demo
 
 ![demo](res/demo.png)
+
+## Current limitations
+
+* Works on features only at the moment
+* Requires estimation in points
+* Velocity is based on team throughput over last 90 days. Doesn't factor individual/assignee velocity into account.
+* Uncertainty defaults to 25%. Meaning for a task estimated at one day, we'd expect to see it completed within 0.75d – 1.25d. I've set this based on previous experience, but we can tune it via an extension setting.
+* "Time in progress" means exactly that:  total time spent in an "in progress" status. Moving it out of that status category "stops the clock."
+* It'll probably break a lot. Open an issue in this repo and I'll fix it.
 
 ## Installing the extension
 
