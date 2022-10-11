@@ -1,23 +1,20 @@
 # Estimate analysis
   
-TODO: Supply a short overview of the functionality the extension brings to Aha! Develop
-This [Aha! Develop](https://www.aha.io/develop/overview) extension enables...
+Aha! Develop extension that explores techniques for evaluating feature estimates.
 
 It provides these contributions:
 
-TODO: Add a contribution list here. These should briefly describe each of the features provided by this extension.
+* Projected duration: A projected range of how long it will take to complete a feature based on its estimate, estimation uncertainty, and team velocity.
+
 
 ## Demo
 
-TODO: Add a short .gif screen recording showing some of the highlights of your extension. This can be recorded using a tool like [LICECap](https://www.cockos.com/licecap/).
-
-![demo](demo.gif)
+![demo](res/demo.png)
 
 ## Installing the extension
 
 **Note: In order to install an extension into your Aha! Develop account, you must be an account administrator.**
 
-TODO: Fill in a link to your built extension package
 Install the Estimate analysis extension by clicking [here](https://secure.aha.io/settings/account/extensions/install?url=).
 
 ## Working on the extension
@@ -30,9 +27,8 @@ npm install -g aha-cli
 
 Clone the repo:
 
-TODO: Add the repository URL here
 ```sh
-git clone ...
+git clone https://github.com/trydionel/estimation-analysis.git
 ```
 
 **Note: In order to install an extension into your Aha! Develop account, you must be an account administrator.**
