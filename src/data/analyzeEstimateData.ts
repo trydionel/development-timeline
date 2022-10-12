@@ -52,18 +52,20 @@ export async function analyzeEstimateData(record: Aha.Feature, settings: Estimat
   const timeInProgress = milliseconds / 86_400_000
 
   // Projected duration
-  const ideal = estimate.value / velocity
-  let projected, model : EstimateAnalysis['model']
+  const mean = estimate.value / velocity
+  let ideal, projected, model : EstimateAnalysis['model']
   if (settings.fancyMath) {
-    const stats = statistics(ideal, uncertainty * ideal) // FIXME: not sure if this is right for stdev!
+    const stats = statistics(mean, uncertainty * mean) // FIXME: not sure if this is right for stdev!
 
     model = 'LOGNORMAL'
+    ideal = stats.median
     projected = stats.iqr
   } else {
-    const lower = estimate.value / (velocity * (1 + uncertainty))
-    const upper = estimate.value / (velocity * (1 - uncertainty))
+    const lower = (estimate.value * (1 - uncertainty)) / velocity
+    const upper = (estimate.value * (1 + uncertainty)) / velocity
 
     model = 'SIMPLE'
+    ideal = mean
     projected = [lower, upper]
   }
 
