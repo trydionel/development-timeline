@@ -1,22 +1,28 @@
+import { statistics } from "./analysis/statistical"
 import { StatusTransition, findTransitions } from "./findTransitions"
 import { loadEstimationData } from "./loadEstimationData"
 
-interface EstimateAnalysisSettings {
+export interface EstimateAnalysisSettings {
   estimateUncertainty: number
+  fancyMath: boolean
 }
 
 export interface EstimateAnalysis {
+  model: 'SIMPLE' | 'LOGNORMAL'
   estimate: Aha.Estimate
   velocity: number
   timeInProgress: number
-  transitions: StatusTransition[],
-  projectedDuration: [number, number],
+  transitions: StatusTransition[]
+  duration: {
+    ideal: number
+    projected: [number, number]
+  }
   risk: 'NOT_STARTED' | 'ON_TRACK' | 'NEARING_ESTIMATE' | 'EXCEEDING_ESTIMATE'
 }
 
 export async function analyzeEstimateData(record: Aha.Feature, settings: EstimateAnalysisSettings): Promise<EstimateAnalysis | null> {
   const data = await loadEstimationData(record)
-  const uncertainty = settings.estimateUncertainty
+  const uncertainty = settings.estimateUncertainty / 100 // as percentage
 
   // Estimate
   const estimate = data.feature.originalEstimate
@@ -46,27 +52,43 @@ export async function analyzeEstimateData(record: Aha.Feature, settings: Estimat
   const timeInProgress = milliseconds / 86_400_000
 
   // Projected duration
-  const lower = estimate.value / (velocity * (1 + (uncertainty / 100)))
-  const upper = estimate.value / (velocity * (1 - (uncertainty / 100)))
+  const ideal = estimate.value / velocity
+  let projected, model : EstimateAnalysis['model']
+  if (settings.fancyMath) {
+    const stats = statistics(ideal, uncertainty * ideal) // FIXME: not sure if this is right for stdev!
+
+    model = 'LOGNORMAL'
+    projected = stats.iqr
+  } else {
+    const lower = estimate.value / (velocity * (1 + uncertainty))
+    const upper = estimate.value / (velocity * (1 - uncertainty))
+
+    model = 'SIMPLE'
+    projected = [lower, upper]
+  }
 
   // Risk
   let risk: EstimateAnalysis['risk']
   if (timeInProgress === 0) {
     risk = 'NOT_STARTED'
-  } else if (timeInProgress < lower) {
+  } else if (timeInProgress < projected[0]) {
     risk = 'ON_TRACK'
-  } else if (timeInProgress > lower && timeInProgress < upper) {
+  } else if (timeInProgress > projected[0] && timeInProgress < projected[1]) {
     risk = 'NEARING_ESTIMATE'
-  } else if (timeInProgress > upper) {
+  } else if (timeInProgress > projected[1]) {
     risk = 'EXCEEDING_ESTIMATE'
   }
 
   return {
+    model,
     estimate,
     velocity,
     transitions,
     timeInProgress,
-    projectedDuration: [lower, upper],
+    duration: {
+      ideal,
+      projected
+    },
     risk
   }
 }

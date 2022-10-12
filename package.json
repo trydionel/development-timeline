@@ -32,11 +32,22 @@
           "scope": [
             "account"
           ]
+        },
+        "fancyMath": {
+          "title": "Use advanced techniques",
+          "description": "Whether to enable advanced mathematical models for projecting completion dates",
+          "default": false,
+          "type": "boolean",
+          "scope": [
+            "account"
+          ]
         }
       }
     }
   },
   "dependencies": {
+    "@stdlib/random-base-lognormal": "^0.0.6",
+    "@stdlib/stats-base-dists-lognormal": "^0.0.7",
     "lodash": "^4.17.21"
   }
 }

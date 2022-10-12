@@ -1,14 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { analyzeEstimateData, EstimateAnalysis } from '../data/analyzeEstimateData'
+import { analyzeEstimateData, EstimateAnalysis, EstimateAnalysisSettings } from '../data/analyzeEstimateData'
 import { RiskBadge } from './RiskBadge'
-
-interface ProjectedDurationSettings {
-  estimateUncertainty: number
-}
 
 interface ProjectedDurationProps {
   record: Aha.Feature
-  settings: ProjectedDurationSettings
+  settings: EstimateAnalysisSettings
 }
 
 export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) => {
@@ -40,9 +36,9 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
     <div className="ml-2">
       <div>
         <span>
-          {analysis.projectedDuration[0].toFixed(1)}d
-          &mdash;
-          {analysis.projectedDuration[1].toFixed(1)}d
+          {analysis.duration.projected[0].toFixed(1)}d
+          <span className="m-1">&mdash;</span>
+          {analysis.duration.projected[1].toFixed(1)}d
         </span>
         <span className="ml-1">
           <aha-tooltip-default-trigger aria-describedby="projected-duration-tooltip"></aha-tooltip-default-trigger>
