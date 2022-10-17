@@ -13,7 +13,7 @@ export interface EstimateAnalysisSettings {
 export interface EstimateAnalysis {
   model: 'SIMPLE' | 'LOGNORMAL'
   estimate: Aha.Estimate
-  velocity: number
+  velocity: Record<string, number>
   timeInProgress: number
   transitions: StatusTransition[]
   duration: {
@@ -33,28 +33,35 @@ export async function analyzeEstimateData(record: Aha.Feature, settings: Estimat
     return null
   }
 
-  // Velocity
+  // Velocity: team and individual
   const weeks = data.throughput.timeSeries
   if (weeks.length === 0) {
     return null
   }
 
+  const velocity = data.project.currentIteration.teamMembers.reduce((acc, t) => {
+    acc[t.user.id] = t.storyPoints / (t.workingHours / HOURS_IN_WORKDAY)
+    return acc
+  }, {})
   const points = weeks.reduce((acc, s) => acc + s.originalEstimate, 0)
-  const days = weeks.length * 7
-  const velocity = points / days
+  const days = weeks.length * WORKDAYS_IN_WEEK
+  const team = points / days
+  velocity['team'] = team
 
   // Projected duration
-  const mean = estimate.value / velocity
+  // Use assignee velocity iff available, team throughput if not
+  const assigneeVelocity = velocity[data.feature.assignedToUser.id] || velocity['team']
+  const mean = estimate.value / assigneeVelocity
   let ideal, projected, model : EstimateAnalysis['model']
   if (settings.fancyMath) {
-    const stats = statistics(mean, uncertainty * mean) // FIXME: not sure if this is right for stdev!
+    const stats = statistics(mean, uncertainty * mean) // Interpretation: 68% of records are completed within +/- (uncertainty * mean)
 
     model = 'LOGNORMAL'
     ideal = stats.median
     projected = stats.iqr
   } else {
-    const lower = (estimate.value * (1 - uncertainty)) / velocity
-    const upper = (estimate.value * (1 + uncertainty)) / velocity
+    const lower = (estimate.value * (1 - uncertainty)) / assigneeVelocity
+    const upper = (estimate.value * (1 + uncertainty)) / assigneeVelocity
 
     model = 'SIMPLE'
     ideal = mean

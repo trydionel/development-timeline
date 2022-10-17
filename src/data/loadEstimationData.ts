@@ -1,5 +1,6 @@
 export interface EstimatationDataRespose {
   feature: Aha.Feature
+  project: Aha.Project
   throughput: {
     timeSeries: any[] // No pre-defined type for this?
   }
@@ -9,50 +10,70 @@ export interface EstimatationDataRespose {
 }
 
 const EstimationDataQuery = `
- query EstimationData($id: ID!, $throughputFilters: RecordEventFilters!, $transitionFilters: RecordEventFilters!) {
-   feature(id: $id) {
-     originalEstimate {
-       text
-       value
-       units
-     }
-     teamWorkflowStatus {
-      internalMeaning
-     }
-   }
-   throughput: recordEvents(filters: $throughputFilters) {
-     timeSeries(timeGroup: WEEK, aggregation: SUM) {
-       eventTimeIndex
-       eventType
-       units
-       originalEstimate
-       remainingEstimate
-       seriesRange {
-         from
-         to
-       }
-     }
-   }
-   transitions: recordEvents(filters: $transitionFilters) {
-     raw {
-       teamWorkflowStatus {
-         internalMeaning
-         name
-         color
-         workflow {
-           name
-         }
-       }
-       createdAt
-       eventType
-       id
-       team {
-         name
-         isTeam
-       }
-     }
-   }
- }
+query EstimationData($id: ID!, $teamId: ID!, $throughputFilters: RecordEventFilters!, $transitionFilters: RecordEventFilters!) {
+  feature(id: $id) {
+    assignedToUser {
+      id
+      name
+    }
+    originalEstimate {
+      text
+      value
+      units
+    }
+    teamWorkflowStatus {
+     internalMeaning
+    }
+  }
+  throughput: recordEvents(filters: $throughputFilters) {
+    timeSeries(timeGroup: WEEK, aggregation: SUM) {
+      eventTimeIndex
+      eventType
+      units
+      originalEstimate
+      remainingEstimate
+      seriesRange {
+        from
+        to
+      }
+    }
+  }
+  transitions: recordEvents(filters: $transitionFilters) {
+    raw {
+      teamWorkflowStatus {
+        internalMeaning
+        name
+        color
+        workflow {
+          name
+        }
+      }
+      createdAt
+      eventType
+      id
+      team {
+        name
+        isTeam
+      }
+    }
+  }
+  project(id: $teamId) {
+    currentIteration {
+      teamMembers {
+        id
+        workingHours
+        user {
+          id
+          name
+        }
+        storyPoints
+      }
+      name
+      startDate
+      duration
+    }
+  }
+}
 `
 
 export async function loadEstimationData(record) {
@@ -65,6 +86,7 @@ export async function loadEstimationData(record) {
     {
       variables: {
         id: record.id,
+        teamId: record.teamId,
         throughputFilters: {
           createdAt: {
             gt: new Date(new Date().setDate(now.getDate() - 90)).toISOString(),

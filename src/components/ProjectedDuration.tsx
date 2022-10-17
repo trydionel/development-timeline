@@ -44,7 +44,7 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
           <aha-tooltip-default-trigger aria-describedby="projected-duration-tooltip"></aha-tooltip-default-trigger>
           <aha-tooltip id="projected-duration-tooltip">
             <span>
-              Based on team velocity of {analysis.velocity.toFixed(1)}p / day
+              Based on velocity of {analysis.velocity.team.toFixed(1)}p / day
               and {settings.estimateUncertainty}% estimate uncertainty.
             </span>
           </aha-tooltip>
