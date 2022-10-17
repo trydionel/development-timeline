@@ -48,6 +48,7 @@
   "dependencies": {
     "@stdlib/random-base-lognormal": "^0.0.6",
     "@stdlib/stats-base-dists-lognormal": "^0.0.7",
+    "date-fns": "^2.29.3",
     "lodash": "^4.17.21"
   }
 }

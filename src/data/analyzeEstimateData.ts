@@ -1,6 +1,9 @@
+import { analyzeProgress, StatusTransition } from "./analysis/progress"
 import { statistics } from "./analysis/statistical"
-import { StatusTransition, findTransitions } from "./findTransitions"
 import { loadEstimationData } from "./loadEstimationData"
+
+const HOURS_IN_WORKDAY = 8
+const WORKDAYS_IN_WEEK = 5
 
 export interface EstimateAnalysisSettings {
   estimateUncertainty: number
@@ -40,17 +43,6 @@ export async function analyzeEstimateData(record: Aha.Feature, settings: Estimat
   const days = weeks.length * 7
   const velocity = points / days
 
-  // Time In Status
-  const transitions = findTransitions(data.transitions.raw)
-  let milliseconds = transitions.filter(t => t.statusCategory === "IN_PROGRESS").reduce((acc, t) => acc + t.duration, 0)
-  // Include time spent in current status iff in progress
-  if (data.feature.teamWorkflowStatus.internalMeaning === 'IN_PROGRESS') {
-    const last = transitions[transitions.length - 1]
-    const duration = +new Date() - Date.parse(last.timestamp)
-    milliseconds += duration
-  }
-  const timeInProgress = milliseconds / 86_400_000
-
   // Projected duration
   const mean = estimate.value / velocity
   let ideal, projected, model : EstimateAnalysis['model']
@@ -68,6 +60,9 @@ export async function analyzeEstimateData(record: Aha.Feature, settings: Estimat
     ideal = mean
     projected = [lower, upper]
   }
+
+  // Time In Status
+  const { transitions, timeInProgress } = analyzeProgress(data.transitions.raw)
 
   // Risk
   let risk: EstimateAnalysis['risk']
