@@ -19,7 +19,9 @@
           "entryPoint": "src/views/projectedDuration.js",
           "host": "attribute",
           "recordTypes": [
-            "Feature"
+            "Epic",
+            "Feature",
+            "Requirement"
           ]
         }
       },

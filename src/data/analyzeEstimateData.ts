@@ -23,12 +23,12 @@ export interface EstimateAnalysis {
   risk: 'NOT_STARTED' | 'ON_TRACK' | 'NEARING_ESTIMATE' | 'EXCEEDING_ESTIMATE'
 }
 
-export async function analyzeEstimateData(record: Aha.Feature, settings: EstimateAnalysisSettings): Promise<EstimateAnalysis | null> {
+export async function analyzeEstimateData(record: Aha.RecordUnion, settings: EstimateAnalysisSettings): Promise<EstimateAnalysis | null> {
   const data = await loadEstimationData(record)
   const uncertainty = settings.estimateUncertainty / 100 // as percentage
 
   // Estimate
-  const estimate = data.feature.originalEstimate
+  const estimate = data.record.originalEstimate
   if (!estimate.value) {
     return null
   }
@@ -50,7 +50,7 @@ export async function analyzeEstimateData(record: Aha.Feature, settings: Estimat
 
   // Projected duration
   // Use assignee velocity iff available, team throughput if not
-  const assigneeVelocity = velocity[data.feature.assignedToUser.id] || velocity['team']
+  const assigneeVelocity = velocity[data.record.assignedToUser.id] || velocity['team']
   const mean = estimate.value / assigneeVelocity
   let ideal, projected, model : EstimateAnalysis['model']
   if (settings.fancyMath) {

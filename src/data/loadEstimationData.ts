@@ -1,5 +1,5 @@
 export interface EstimatationDataRespose {
-  feature: Aha.Feature
+  record: Aha.Feature
   project: Aha.Project
   throughput: {
     timeSeries: any[] // No pre-defined type for this?
@@ -9,9 +9,9 @@ export interface EstimatationDataRespose {
   }
 }
 
-const EstimationDataQuery = `
+const EstimationDataQuery = (typeField) => `
 query EstimationData($id: ID!, $teamId: ID!, $throughputFilters: RecordEventFilters!, $transitionFilters: RecordEventFilters!) {
-  feature(id: $id) {
+  record: ${typeField}(id: $id) {
     assignedToUser {
       id
       name
@@ -76,13 +76,14 @@ query EstimationData($id: ID!, $teamId: ID!, $throughputFilters: RecordEventFilt
 }
 `
 
-export async function loadEstimationData(record) {
+export async function loadEstimationData(record: Aha.RecordUnion) {
   const now = new Date()
+  const typeField = record.typename.toLowerCase()
 
   // Need this for the throughput query
   await record.loadAttributes('teamId')
 
-  return await aha.graphQuery<EstimatationDataRespose>(EstimationDataQuery,
+  return await aha.graphQuery<EstimatationDataRespose>(EstimationDataQuery(typeField),
     {
       variables: {
         id: record.id,
@@ -97,7 +98,7 @@ export async function loadEstimationData(record) {
           units: "POINTS",
         },
         transitionFilters: {
-          featureId: record.id,
+          [`${typeField}Id`]: record.id,
           eventType: [
             "RECORD_ADDED_TO_TEAM_WORKFLOW_STATUS",
             "RECORD_REMOVED_FROM_TEAM_WORKFLOW_STATUS",

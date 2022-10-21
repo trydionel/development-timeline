@@ -20,6 +20,16 @@ It provides these contributions:
 * "Time in progress" means exactly that:  total time spent in an "in progress" status. Moving it out of that status category "stops the clock."
 * It'll probably break a lot. Open an issue in this repo and I'll fix it.
 
+## What's next
+
+- [x] Projected durations based on individual velocity
+- [x] Exclude non-business-days from time in progress
+- [x] Support epics and requirements
+- [ ] Project dates for collections of records (releases, epics, features)
+- [ ] Compare original vs remaining estimate projections ("trending late", "trending early")
+- [ ] Explore "Sprint inflation" and "Adjusted minimum capacity" concepts
+- [ ] Support time-based estimation
+
 ## Installing the extension
 
 **Note: In order to install an extension into your Aha! Develop account, you must be an account administrator.**
