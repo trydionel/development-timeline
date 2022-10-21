@@ -15,7 +15,7 @@
     "contributes": {
       "views": {
         "projectedDuration": {
-          "title": "Projected duration",
+          "title": "Timeline",
           "entryPoint": "src/views/projectedDuration.js",
           "host": "attribute",
           "recordTypes": [

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { analyzeEstimateData, EstimateAnalysis, EstimateAnalysisSettings } from '../data/analyzeEstimateData'
 import { RiskBadge } from './RiskBadge'
+import { StatusTransitions } from './StatusTransitions'
 
 interface ProjectedDurationProps {
   record: Aha.Feature
@@ -33,8 +34,10 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
   }
 
   return (
-    <div className="ml-2">
-      <div>
+    <div className="ml-2 mt-1">
+      <StatusTransitions transitions={analysis.transitions} />
+      <div className="my-4">
+        <h6>Projected duration</h6>
         <span>
           {analysis.duration.projected[0].toFixed(1)}d
           <span className="m-1">&mdash;</span>
@@ -50,11 +53,15 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
           </aha-tooltip>
         </span>
       </div>
-      <div className="text-muted">
-        <span className="mr-1">Time in progress so far: {analysis.timeInProgress.toFixed(1)}d</span>
-        <small>
-          <RiskBadge risk={analysis.risk} />
-        </small>
+      <div className="my-4">
+        <h6>Time in progress</h6>
+        <div>
+          {analysis.timeInProgress.toFixed(1)}d
+          &nbsp;
+          <small>
+            <RiskBadge risk={analysis.risk} />
+          </small>
+        </div>
       </div>
     </div>
   )

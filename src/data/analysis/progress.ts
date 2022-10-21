@@ -1,11 +1,11 @@
-import { chain, groupBy, sortBy, find } from 'lodash'
+import { chain, find } from 'lodash'
 import { differenceInBusinessDays } from 'date-fns'
 
 interface StatusAssignment {
-  timestamp: string
+  id: string
   team: string
   status: string
-  category: string
+  category: Aha.WorkflowStatusAttributes['internalMeaning']
   color: string
 }
 
@@ -19,8 +19,11 @@ function colorToHex(color: number) {
   return `#${(color & 0xffffff).toString(16)}`
 }
 
-function eventToStatusAssignment(raw: Aha.RecordEventRaw) {
+function eventToStatusAssignment(raw: Aha.RecordEventRaw): StatusAssignment | {} {
+  if (!raw) return {}
+
   return {
+    id: raw.id,
     team: raw.team.name,
     status: raw.teamWorkflowStatus.name,
     category: raw.teamWorkflowStatus.internalMeaning,
@@ -28,19 +31,17 @@ function eventToStatusAssignment(raw: Aha.RecordEventRaw) {
   }
 }
 
-// Relevant transitions
-// * [RECORD_ADDED_TO_TEAM, RECORD_ADDED_TO_TEAM_WORKFLOW_STATUS]
-// * [RECORD_REMOVED_FROM_TEAM_WORKFLOW_STATUS, RECORD_ADDED_TO_TEAM_WORKFLOW_STATUS]
-// * [RECORD_REMOVED_FROM_TEAM_WORKFLOW_STATUS, RECORD_REMOVED_FROM_TEAM]
-
 export function findTransitions(events: Aha.RecordEventRaw[]): StatusTransition[] {
-  const raw = sortBy(events, "createdAt");
-  const transitions = chain(raw)
-    .filter((e) => e.team.isTeam) // ignore workspace events
+  const raw = chain(events)
+    .filter((e) => e.team.isTeam)
+    .sortBy("createdAt")
+    .value();
+
+  const eventPairs = chain(raw)
     .groupBy(
       (e) => `${e.team ? e.team.name : "unknown"}#${e.createdAt}`
     )
-    .omitBy((events, key) => {
+    .omitBy((events) => {
       const from = find(events, {
         eventType: "RECORD_REMOVED_FROM_TEAM_WORKFLOW_STATUS"
       });
@@ -49,9 +50,9 @@ export function findTransitions(events: Aha.RecordEventRaw[]): StatusTransition[
         eventType: "RECORD_ADDED_TO_TEAM_WORKFLOW_STATUS"
       });
 
-      // Skip if this is the initial assignment to the team
+      // Forcibly include initial transition to team
       if (!from) {
-        return true;
+        return false
       }
 
       // Skip if the two workflows in the transition don't match
@@ -64,23 +65,25 @@ export function findTransitions(events: Aha.RecordEventRaw[]): StatusTransition[
 
       return false;
     })
-    .map((events, key, obj) => {
+    .value()
+
+  const timestamps = chain(eventPairs)
+    .values()
+    .flatten()
+    .map("createdAt")
+    .uniq()
+    .sort()
+    .value();
+
+  const transitions = chain(eventPairs)
+    .map((events, key) => {
       const [_, timestamp] = key.split("#");
-      const timestamps = chain(obj)
-        .values()
-        .flatten()
-        .map("createdAt")
-        .uniq()
-        .sort()
-        .value();
-      const fromTimestamp =
-        chain(timestamps)
-          .indexOf(timestamp)
-          .thru((index) => timestamps[index - 1])
-          .value()
+      const timestampIndex = timestamps.indexOf(timestamp)
+      const previousTimestamp = timestamps[timestampIndex - 1]
 
       // FIXME: Still doesn't take full work schedule into account
-      const duration = differenceInBusinessDays(Date.parse(timestamp), Date.parse(fromTimestamp))
+      // FIXME: Provides days only. Doesn't take business hours into account
+      const duration = differenceInBusinessDays(Date.parse(timestamp), Date.parse(previousTimestamp))
 
       const from = find(events, {
         eventType: "RECORD_REMOVED_FROM_TEAM_WORKFLOW_STATUS"
@@ -96,25 +99,33 @@ export function findTransitions(events: Aha.RecordEventRaw[]): StatusTransition[
           ...eventToStatusAssignment(to)
         },
         from: {
-          timestamp: fromTimestamp,
+          timestamp: previousTimestamp,
           ...eventToStatusAssignment(from)
         }
       };
     })
     .value();
 
-    // FIXME: Missing timestamp for initial transition to team / not started status
 
-    // Add transition event for current status to make analysis easier
-    const last = transitions[transitions.length - 1]
+  // Remove initial transition to team since the second transition event has
+  // picked it up at this point
+  const first = transitions[0]
+  if (first && !first.from.id) {
+    transitions.shift()
+  }
+
+  // Add transition event for current status to make analysis easier
+  const last = transitions[transitions.length - 1]
+  if (last) {
     const duration = differenceInBusinessDays(Date.now(), Date.parse(last.to.timestamp))
     transitions.push({
       duration,
       from: last.to,
       to: null
     })
+  }
 
-    return transitions
+  return transitions
 }
 
 export function analyzeProgress(events: Aha.RecordEventRaw[]) {
