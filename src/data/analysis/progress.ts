@@ -3,6 +3,7 @@ import { differenceInBusinessDays } from 'date-fns'
 
 interface StatusAssignment {
   id: string
+  timestamp: Date
   team: string
   status: string
   category: Aha.WorkflowStatusAttributes['internalMeaning']
@@ -19,11 +20,12 @@ function colorToHex(color: number) {
   return `#${(color & 0xffffff).toString(16)}`
 }
 
-function eventToStatusAssignment(raw: Aha.RecordEventRaw): StatusAssignment | {} {
+function eventToStatusAssignment(raw: Aha.RecordEventRaw, timestamp: string): StatusAssignment | {} {
   if (!raw) return {}
 
   return {
     id: raw.id,
+    timestamp: new Date(Date.parse(timestamp)),
     team: raw.team.name,
     status: raw.teamWorkflowStatus.name,
     category: raw.teamWorkflowStatus.internalMeaning,
@@ -94,14 +96,9 @@ export function findTransitions(events: Aha.RecordEventRaw[]): StatusTransition[
 
       return {
         duration,
-        to: {
-          timestamp,
-          ...eventToStatusAssignment(to)
-        },
-        from: {
-          timestamp: previousTimestamp,
-          ...eventToStatusAssignment(from)
-        }
+        to: eventToStatusAssignment(to, timestamp),
+        from: eventToStatusAssignment(from, previousTimestamp)
+        
       };
     })
     .value();
@@ -117,11 +114,12 @@ export function findTransitions(events: Aha.RecordEventRaw[]): StatusTransition[
   // Add transition event for current status to make analysis easier
   const last = transitions[transitions.length - 1]
   if (last) {
-    const duration = differenceInBusinessDays(Date.now(), Date.parse(last.to.timestamp))
+    const now = Date.now()
+    const duration = differenceInBusinessDays(now, Date.parse(last.to.timestamp))
     transitions.push({
       duration,
       from: last.to,
-      to: null
+      to: { timestamp: new Date(now) }
     })
   }
 
