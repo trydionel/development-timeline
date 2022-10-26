@@ -7,6 +7,9 @@ export interface EstimatationDataRespose {
   transitions: {
     raw: Aha.RecordEventRaw[]
   }
+  users: {
+    totalCount: number
+  }
 }
 
 const EstimationDataQuery = (typeField) => `
@@ -73,6 +76,9 @@ query EstimationData($id: ID!, $teamId: ID!, $throughputFilters: RecordEventFilt
       duration
     }
   }
+  users(filters: {projectId: $teamId}) {
+    totalCount
+  }
 }
 `
 
@@ -82,6 +88,9 @@ export async function loadEstimationData(record: Aha.RecordUnion) {
 
   // Need this for the throughput query
   await record.loadAttributes('teamId')
+  if (!record.teamId) {
+    throw new Error('Record not assigned to a team')
+  }
 
   return await aha.graphQuery<EstimatationDataRespose>(EstimationDataQuery(typeField),
     {

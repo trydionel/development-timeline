@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { analyzeEstimateData, EstimateAnalysis, EstimateAnalysisSettings } from '../data/analyzeEstimateData'
+import { EstimatationDataRespose, loadEstimationData } from '../data/loadEstimationData'
 import { RiskBadge } from './RiskBadge'
 import { StatusTransitions } from './StatusTransitions'
 
@@ -10,13 +11,16 @@ interface ProjectedDurationProps {
 
 export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) => {
   const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<EstimatationDataRespose | null>(null)
   const [analysis, setAnalysis] = useState<EstimateAnalysis | null>(null)
+  const [totalAssignees, setTotalAssignees] = useState<number>(1)
+  const [estimateUncertainty, setEstimateUncertainty] = useState<number>(settings.estimateUncertainty)
 
   useEffect(() => {
     (async () => {
       try {
-        const data = await analyzeEstimateData(record, settings)
-        setAnalysis(data)
+        const data = await loadEstimationData(record)
+        setData(data)
       } catch (e) {
         console.warn(`Unable to load estimation data for ${record.id}`, e)
       } finally {
@@ -24,6 +28,22 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
       }
     })()
   }, [record])
+
+  useEffect(() => {
+    if (!data) return
+
+    try {
+      const analysis = analyzeEstimateData(data, {
+        fancyMath: settings.fancyMath,
+        estimateUncertainty,
+        totalAssignees
+      })
+      console.log(analysis)
+      setAnalysis(analysis)
+    } catch (e) {
+      console.warn(`Unable to analyze estimate data for ${record.id}`, e)
+    }
+  }, [data, settings, totalAssignees, estimateUncertainty])
 
   if (loading) {
     return <aha-spinner />
@@ -34,35 +54,68 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
   }
 
   return (
-    <div className="ml-2 mt-1">
-      <StatusTransitions transitions={analysis.transitions} />
-      <div className="my-4">
-        <h6>Projected duration</h6>
-        <span>
-          {analysis.duration.projected[0].toFixed(1)}d
-          <span className="m-1">&mdash;</span>
-          {analysis.duration.projected[1].toFixed(1)}d
-        </span>
-        <span className="ml-1">
-          <aha-tooltip-default-trigger aria-describedby="projected-duration-tooltip"></aha-tooltip-default-trigger>
-          <aha-tooltip id="projected-duration-tooltip">
+    <>
+      <div className="ml-2 mt-1">
+        <StatusTransitions transitions={analysis.transitions} />
+
+        <div style={{ display: 'flex', justifyContent: 'space-between' }} className="my-4">
+          <div>
+            <h6>Projected duration</h6>
             <span>
-              Based on velocity of {analysis.velocity.team.toFixed(1)}p / day
-              and {settings.estimateUncertainty}% estimate uncertainty.
+              {analysis.duration.projected[0].toFixed(1)}d
+              <span className="m-1">&mdash;</span>
+              {analysis.duration.projected[1].toFixed(1)}d
             </span>
-          </aha-tooltip>
-        </span>
-      </div>
-      <div className="my-4">
-        <h6>Time in progress</h6>
+            <span className="ml-1">
+              <aha-tooltip-default-trigger aria-describedby="projected-duration-tooltip"></aha-tooltip-default-trigger>
+              <aha-tooltip id="projected-duration-tooltip">
+                <span>
+                  Based on velocity of {analysis.duration.velocity.toFixed(2)}p / day
+                  and {settings.estimateUncertainty}% estimate uncertainty.
+                </span>
+              </aha-tooltip>
+            </span>
+          </div>
+
+          <div style={{ textAlign: 'right' }}>
+            <h6>Time in progress</h6>
+            <div>
+              <small>
+                <RiskBadge risk={analysis.risk} />
+              </small>
+              &nbsp;
+              {analysis.timeInProgress.toFixed(1)}d
+            </div>
+          </div>
+        </div>
+
         <div>
-          {analysis.timeInProgress.toFixed(1)}d
-          &nbsp;
-          <small>
-            <RiskBadge risk={analysis.risk} />
+          <small className="text-muted">
+            What is this?&nbsp;
+            <aha-tooltip-default-trigger trigger="development-trigger-info" />
+            <aha-tooltip placement="bottom" id="development-trigger-info">
+              This extension is exploring concepts from <br />
+              https://big.aha.io/features/A-14541. Please send feedback to Jeff.
+            </aha-tooltip>
           </small>
         </div>
       </div>
-    </div>
+
+      <details className="my-4" style={{ backgroundColor: 'var(--theme-container-background	)', padding: 8, borderRadius: 2 }}>
+        <summary><strong>Parameters</strong></summary>
+        <div className="mt-4">
+          <aha-field layout="vertical">
+            <div slot="label">Estimation uncertainty</div>
+            <input type="range" min="1" max="99" step="1" defaultValue={estimateUncertainty} onChange={e => setEstimateUncertainty(e.target.valueAsNumber)} />
+            <div slot="help">How much inaccuracy do you expect during estimation?</div>
+          </aha-field>
+          <aha-field layout="vertical" class="mt-2">
+            <div slot="label">Total assignees</div>
+            <input type="number" defaultValue={totalAssignees} onChange={e => setTotalAssignees(e.target.valueAsNumber)} />
+            <div slot="help">How many developers will work on this?</div>
+          </aha-field>
+        </div>
+      </details>
+    </>
   )
 }

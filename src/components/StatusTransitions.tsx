@@ -7,7 +7,13 @@ interface StatusTransitionsProps {
 }
 
 export const StatusTransitions = ({ transitions }: StatusTransitionsProps) => {
+  if (transitions.length === 0) {
+    return ''
+  }
+
   const totalDuration = sumBy(transitions, t => t.duration || 0)
+  const startDate = transitions[0].from.timestamp
+  const endDate = transitions[transitions.length - 1].to.timestamp
 
   return (
     <div className="timeline" style={{ margin: '8px 0' }}>
@@ -21,6 +27,7 @@ export const StatusTransitions = ({ transitions }: StatusTransitionsProps) => {
                 </div>
               </aha-tooltip-trigger>
               <aha-tooltip id={`transition-${i}`} placement="bottom">
+                <strong><aha-icon icon="fa-regular fa-users" /> {t.from.team}</strong><br />
                 {t.from.status}: {t.duration.toFixed(1)}d
               </aha-tooltip>
             </>
@@ -28,8 +35,8 @@ export const StatusTransitions = ({ transitions }: StatusTransitionsProps) => {
         })}
       </div>
       <div className="timeline--labels" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10 }}>
-        <span>{ transitions[0].from.timestamp.toLocaleDateString() }</span>
-        <span>{ transitions[transitions.length - 1].to.timestamp.toLocaleDateString() }</span>
+        <span>{ startDate && startDate.toLocaleDateString() }</span>
+        <span>{ endDate && endDate.toLocaleDateString() }</span>
       </div>
     </div>
   )

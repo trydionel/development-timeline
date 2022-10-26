@@ -1,6 +1,6 @@
 import { analyzeProgress, StatusTransition } from "./analysis/progress"
 import { statistics } from "./analysis/statistical"
-import { loadEstimationData } from "./loadEstimationData"
+import { EstimatationDataRespose } from "./loadEstimationData"
 
 const HOURS_IN_WORKDAY = 8
 const WORKDAYS_IN_WEEK = 5
@@ -8,6 +8,7 @@ const WORKDAYS_IN_WEEK = 5
 export interface EstimateAnalysisSettings {
   estimateUncertainty: number
   fancyMath: boolean
+  totalAssignees: number
 }
 
 export interface EstimateAnalysis {
@@ -17,14 +18,15 @@ export interface EstimateAnalysis {
   timeInProgress: number
   transitions: StatusTransition[]
   duration: {
+    velocity: number
     ideal: number
     projected: [number, number]
   }
   risk: 'NOT_STARTED' | 'ON_TRACK' | 'NEARING_ESTIMATE' | 'EXCEEDING_ESTIMATE'
+  settings: EstimateAnalysisSettings
 }
 
-export async function analyzeEstimateData(record: Aha.RecordUnion, settings: EstimateAnalysisSettings): Promise<EstimateAnalysis | null> {
-  const data = await loadEstimationData(record)
+export function analyzeEstimateData(data: EstimatationDataRespose, settings: EstimateAnalysisSettings): (EstimateAnalysis | null) {
   const uncertainty = settings.estimateUncertainty / 100 // as percentage
 
   // Estimate
@@ -39,18 +41,28 @@ export async function analyzeEstimateData(record: Aha.RecordUnion, settings: Est
     return null
   }
 
-  const velocity = data.project.currentIteration.teamMembers.reduce((acc, t) => {
-    acc[t.user.id] = t.storyPoints / (t.workingHours / HOURS_IN_WORKDAY)
-    return acc
-  }, {})
   const points = weeks.reduce((acc, s) => acc + s.originalEstimate, 0)
   const days = weeks.length * WORKDAYS_IN_WEEK
-  const team = points / days
-  velocity['team'] = team
+  const team = points / days 
+  // FIXME: Need to count committers per week, not total team size
+  const individual = team / data.users.totalCount
+
+  const velocity = {
+    team,
+    individual
+  }
+
+  // Generate per-person velocities if the team is using individual capacity for sprint planning
+  if (data.project.currentIteration && data.project.currentIteration.teamMembers) {
+     data.project.currentIteration.teamMembers.forEach((t) => {
+      velocity[t.user.id] = t.storyPoints / (t.workingHours / HOURS_IN_WORKDAY)
+    }, {})
+  }
 
   // Projected duration
-  // Use assignee velocity iff available, team throughput if not
-  const assigneeVelocity = velocity[data.record.assignedToUser.id] || velocity['team']
+  // Use assignee velocity iff available, avg individual throughput if not
+  const totalAssignees = settings.totalAssignees || 1
+  const assigneeVelocity = (velocity[data.record.assignedToUser.id] || velocity['individual']) * totalAssignees
   const mean = estimate.value / assigneeVelocity
   let ideal, projected, model : EstimateAnalysis['model']
   if (settings.fancyMath) {
@@ -90,9 +102,11 @@ export async function analyzeEstimateData(record: Aha.RecordUnion, settings: Est
     transitions,
     timeInProgress,
     duration: {
+      velocity: assigneeVelocity,
       ideal,
       projected
     },
-    risk
+    risk,
+    settings
   }
 }
