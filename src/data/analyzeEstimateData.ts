@@ -9,6 +9,7 @@ export interface EstimateAnalysisSettings {
   estimateUncertainty: number
   fancyMath: boolean
   totalAssignees: number
+  defaultEstimate: number
 }
 
 export interface EstimateAnalysis {
@@ -30,9 +31,13 @@ export function analyzeEstimateData(data: EstimatationDataRespose, settings: Est
   const uncertainty = settings.estimateUncertainty / 100 // as percentage
 
   // Estimate
-  const estimate = data.record.originalEstimate
+  let estimate = data.record.originalEstimate
   if (!estimate.value) {
-    return null
+    estimate = {
+      value: settings.defaultEstimate,
+      units: 'POINTS',
+      text: '1p'
+    }
   }
 
   // Velocity: team and individual
@@ -61,7 +66,7 @@ export function analyzeEstimateData(data: EstimatationDataRespose, settings: Est
 
   // Projected duration
   // Use assignee velocity iff available, avg individual throughput if not
-  const totalAssignees = settings.totalAssignees || 1
+  const totalAssignees = settings.totalAssignees || 1 // FIXME: 9 women can make a baby in 1 month?
   const assigneeVelocity = (velocity[data.record.assignedToUser.id] || velocity['individual']) * totalAssignees
   const mean = estimate.value / assigneeVelocity
   let ideal, projected, model : EstimateAnalysis['model']

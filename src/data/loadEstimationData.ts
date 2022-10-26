@@ -1,5 +1,5 @@
 export interface EstimatationDataRespose {
-  record: Aha.Feature
+  record: Aha.RecordUnion
   project: Aha.Project
   throughput: {
     timeSeries: any[] // No pre-defined type for this?

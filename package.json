@@ -43,6 +43,15 @@
           "scope": [
             "account"
           ]
+        },
+        "defaultEstimate": {
+          "title": "Default estimate",
+          "description": "Estimate value to use when no estimate is provided",
+          "default": 1,
+          "type": "number",
+          "scope": [
+            "account"
+          ]
         }
       }
     }

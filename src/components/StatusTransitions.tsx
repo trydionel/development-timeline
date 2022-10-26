@@ -6,9 +6,9 @@ interface StatusTransitionsProps {
   transitions: StatusTransition[]
 }
 
-export const StatusTransitions = ({ transitions }: StatusTransitionsProps) => {
+export const StatusTransitions = ({ transitions, ...props }: StatusTransitionsProps) => {
   if (transitions.length === 0) {
-    return ''
+    return <></>
   }
 
   const totalDuration = sumBy(transitions, t => t.duration || 0)
@@ -16,7 +16,7 @@ export const StatusTransitions = ({ transitions }: StatusTransitionsProps) => {
   const endDate = transitions[transitions.length - 1].to.timestamp
 
   return (
-    <div className="timeline" style={{ margin: '8px 0' }}>
+    <div className="timeline" {...props}>
       <div className="timeline--transitions" style={{ whiteSpace: 'nowrap', position: 'relative' }}>
         {transitions.map((t, i) => {
           return (

@@ -5,7 +5,7 @@ import { RiskBadge } from './RiskBadge'
 import { StatusTransitions } from './StatusTransitions'
 
 interface ProjectedDurationProps {
-  record: Aha.Feature
+  record: Aha.RecordUnion
   settings: EstimateAnalysisSettings
 }
 
@@ -15,6 +15,7 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
   const [analysis, setAnalysis] = useState<EstimateAnalysis | null>(null)
   const [totalAssignees, setTotalAssignees] = useState<number>(1)
   const [estimateUncertainty, setEstimateUncertainty] = useState<number>(settings.estimateUncertainty)
+  const [defaultEstimate, setDefaultEstimate] = useState<number>(settings.defaultEstimate || 1)
 
   useEffect(() => {
     (async () => {
@@ -36,14 +37,15 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
       const analysis = analyzeEstimateData(data, {
         fancyMath: settings.fancyMath,
         estimateUncertainty,
-        totalAssignees
+        totalAssignees,
+        defaultEstimate
       })
       console.log(analysis)
       setAnalysis(analysis)
     } catch (e) {
       console.warn(`Unable to analyze estimate data for ${record.id}`, e)
     }
-  }, [data, settings, totalAssignees, estimateUncertainty])
+  }, [data, settings, totalAssignees, estimateUncertainty, defaultEstimate])
 
   if (loading) {
     return <aha-spinner />
@@ -56,9 +58,9 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
   return (
     <>
       <div className="ml-2 mt-1">
-        <StatusTransitions transitions={analysis.transitions} />
+        <StatusTransitions transitions={analysis.transitions} className="mb-4" />
 
-        <div style={{ display: 'flex', justifyContent: 'space-between' }} className="my-4">
+        <div style={{ display: 'flex', justifyContent: 'space-between' }} className="mb-4">
           <div>
             <h6>Projected duration</h6>
             <span>
@@ -71,7 +73,7 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
               <aha-tooltip id="projected-duration-tooltip">
                 <span>
                   Based on velocity of {analysis.duration.velocity.toFixed(2)}p / day
-                  and {settings.estimateUncertainty}% estimate uncertainty.
+                  and {analysis.settings.estimateUncertainty}% estimate uncertainty.
                 </span>
               </aha-tooltip>
             </span>
@@ -109,10 +111,16 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
             <input type="range" min="1" max="99" step="1" defaultValue={estimateUncertainty} onChange={e => setEstimateUncertainty(e.target.valueAsNumber)} />
             <div slot="help">How much inaccuracy do you expect during estimation?</div>
           </aha-field>
-          <aha-field layout="vertical" class="mt-2">
+          <br />
+          <aha-field layout="vertical">
             <div slot="label">Total assignees</div>
             <input type="number" defaultValue={totalAssignees} onChange={e => setTotalAssignees(e.target.valueAsNumber)} />
             <div slot="help">How many developers will work on this?</div>
+          </aha-field>
+          <aha-field layout="vertical">
+            <div slot="label">Default estimate</div>
+            <input type="number" defaultValue={defaultEstimate} onChange={e => setDefaultEstimate(e.target.valueAsNumber)} />
+            <div slot="help">Default estimate for unestimated records (points)</div>
           </aha-field>
         </div>
       </details>
