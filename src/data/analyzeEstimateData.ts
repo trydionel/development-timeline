@@ -1,117 +1,125 @@
+import { analyzeDuration } from "./analysis/duration"
+import { simulateReleasePlanning } from "./analysis/monteCarlo"
+import { analyzePerformance } from "./analysis/performance"
 import { analyzeProgress, StatusTransition } from "./analysis/progress"
-import { statistics } from "./analysis/statistical"
-import { EstimatationDataRespose } from "./loadEstimationData"
-
-const HOURS_IN_WORKDAY = 8
-const WORKDAYS_IN_WEEK = 5
+import { RecordDataRespose, ReleaseDataRespose } from "./loadEstimationData"
 
 export interface EstimateAnalysisSettings {
   estimateUncertainty: number
   fancyMath: boolean
   totalAssignees: number
   defaultEstimate: number
+  defaultVelocity: number
+  analyzeProgress: boolean
 }
 
-export interface EstimateAnalysis {
+export interface PerformanceAnalysis {
+  teamId: string,
+  totalMembers: number,
+  velocity: {
+    team: number
+    individual: number,
+    teamMember?: Record<string, number>
+  }
+}
+
+export interface DurationAnalysis {
   model: 'SIMPLE' | 'LOGNORMAL'
   estimate: Aha.Estimate
-  velocity: Record<string, number>
+  velocity: number
+  ideal: number
+  projected: [number, number]
+}
+
+export interface ProgressAnalysis {
   timeInProgress: number
   transitions: StatusTransition[]
-  duration: {
-    velocity: number
-    ideal: number
-    projected: [number, number]
-  }
   risk: 'NOT_STARTED' | 'ON_TRACK' | 'NEARING_ESTIMATE' | 'EXCEEDING_ESTIMATE'
+}
+
+export interface RecordAnalysis {
+  record: Aha.RecordUnion
+  performance: PerformanceAnalysis
+  duration: DurationAnalysis
+  progress?: ProgressAnalysis
   settings: EstimateAnalysisSettings
 }
 
-export function analyzeEstimateData(data: EstimatationDataRespose, settings: EstimateAnalysisSettings): (EstimateAnalysis | null) {
-  const uncertainty = settings.estimateUncertainty / 100 // as percentage
+export interface ReleaseAnalysis {
+  performance: Record<string, PerformanceAnalysis>
+  features: DurationAnalysis[]
+  duration: DurationAnalysis
+  settings: EstimateAnalysisSettings
+}
 
-  // Estimate
-  let estimate = data.record.originalEstimate
-  if (!estimate.value) {
-    estimate = {
-      value: settings.defaultEstimate,
-      units: 'POINTS',
-      text: '1p'
-    }
-  }
+export function analyzeSingleRecord(data: RecordDataRespose, settings: EstimateAnalysisSettings): (RecordAnalysis | null) {
+  const record = data.record
+  const performance = analyzePerformance(data, settings)
+  const duration = analyzeDuration(record, performance, settings)
 
-  // Velocity: team and individual
-  const weeks = data.throughput.timeSeries
-  if (weeks.length === 0) {
-    return null
-  }
-
-  const points = weeks.reduce((acc, s) => acc + s.originalEstimate, 0)
-  const days = weeks.length * WORKDAYS_IN_WEEK
-  const team = points / days 
-  // FIXME: Need to count committers per week, not total team size
-  const individual = team / data.users.totalCount
-
-  const velocity = {
-    team,
-    individual
-  }
-
-  // Generate per-person velocities if the team is using individual capacity for sprint planning
-  if (data.project.currentIteration && data.project.currentIteration.teamMembers) {
-     data.project.currentIteration.teamMembers.forEach((t) => {
-      velocity[t.user.id] = t.storyPoints / (t.workingHours / HOURS_IN_WORKDAY)
-    }, {})
-  }
-
-  // Projected duration
-  // Use assignee velocity iff available, avg individual throughput if not
-  const totalAssignees = settings.totalAssignees || 1 // FIXME: 9 women can make a baby in 1 month?
-  const assigneeVelocity = (velocity[data.record.assignedToUser.id] || velocity['individual']) * totalAssignees
-  const mean = estimate.value / assigneeVelocity
-  let ideal, projected, model : EstimateAnalysis['model']
-  if (settings.fancyMath) {
-    const stats = statistics(mean, uncertainty * mean) // Interpretation: 68% of records are completed within +/- (uncertainty * mean)
-
-    model = 'LOGNORMAL'
-    ideal = stats.median
-    projected = stats.iqr
-  } else {
-    const lower = (estimate.value * (1 - uncertainty)) / assigneeVelocity
-    const upper = (estimate.value * (1 + uncertainty)) / assigneeVelocity
-
-    model = 'SIMPLE'
-    ideal = mean
-    projected = [lower, upper]
-  }
-
-  // Time In Status
-  const { transitions, timeInProgress } = analyzeProgress(data.transitions.raw)
-
-  // Risk
-  let risk: EstimateAnalysis['risk']
-  if (timeInProgress === 0) {
-    risk = 'NOT_STARTED'
-  } else if (timeInProgress < projected[0]) {
-    risk = 'ON_TRACK'
-  } else if (timeInProgress > projected[0] && timeInProgress < projected[1]) {
-    risk = 'NEARING_ESTIMATE'
-  } else if (timeInProgress > projected[1]) {
-    risk = 'EXCEEDING_ESTIMATE'
+  let progress = null
+  if (settings.analyzeProgress) {
+    progress = analyzeProgress(data, duration, settings)
   }
 
   return {
-    model,
+    record,
+    performance,
+    progress,
+    duration,
+    settings
+  }
+}
+
+export function analyzeRelease(data: ReleaseDataRespose, settings: EstimateAnalysisSettings): (ReleaseAnalysis | null) {
+  // TODO:
+  // * Order by product value score
+  // * Schedule dependant work appropriately
+  // * Ensure work assigned to the team stays on that team
+  // * Ensure assignees have only one WIP
+  // * Monte Carlo simulation!
+
+  // Analyze performance for each team
+  const performance = {} 
+  Object.keys(data.performance).forEach(teamId => {
+    performance[teamId] = analyzePerformance(data.performance[teamId], settings)
+  })
+
+  // Roll up feature estimates for debugging
+  const totalEstimate = data.features.nodes.reduce((sum, f) => sum + f.originalEstimate.value, 0)
+  const estimate: Aha.Estimate = {
+    value: totalEstimate,
+    units: 'POINTS',
+    text: `${totalEstimate}p`
+  }
+
+  // Analyze duration of each feature according to assigned team
+  const features = data.features.nodes.map(f => {
+    const teamId = f.teamId
+    return analyzeDuration(f, performance[teamId], settings)
+  })
+
+  const N = 1000;
+  const ptile = (arr, p) => arr[Math.floor(arr.length * p)]
+  const simulations = Array(N).fill(0).map(() => {
+    return simulateReleasePlanning(features, settings)
+  }).sort((a, b) => a - b)
+
+  const duration: DurationAnalysis = {
+    model: settings.fancyMath ? 'LOGNORMAL' : 'SIMPLE',
     estimate,
-    velocity,
-    transitions,
-    timeInProgress,
-    duration: {
-      velocity: assigneeVelocity,
-      ideal,
-      projected
-    },
-    risk,
+    ideal: ptile(simulations, 0.5),
+    projected: [
+      ptile(simulations, 0.25),
+      ptile(simulations, 0.75)
+    ],
+    velocity: 0
+  }
+
+  return {
+    performance,
+    features,
+    duration,
     settings
   }
 }

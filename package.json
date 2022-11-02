@@ -23,6 +23,14 @@
             "Feature",
             "Requirement"
           ]
+        },
+        "releaseDuration": {
+          "title": "Timeline",
+          "entryPoint": "src/views/releaseDuration.js",
+          "host": "attribute",
+          "recordTypes": [
+            "Release"
+          ]
         }
       },
       "settings": {
@@ -52,6 +60,24 @@
           "scope": [
             "account"
           ]
+        },
+        "totalAssignees": {
+          "title": "Total assignees",
+          "description": "How many developers will take on the work",
+          "default": 1,
+          "type": "number",
+          "scope": [
+            "account"
+          ]
+        },
+        "defaultVelocity": {
+          "title": "Default velocity",
+          "description": "Default velocity in points per person per day",
+          "default": 0.1,
+          "type": "number",
+          "scope": [
+            "account"
+          ]
         }
       }
     }
@@ -60,6 +86,7 @@
     "@stdlib/random-base-lognormal": "^0.0.6",
     "@stdlib/stats-base-dists-lognormal": "^0.0.7",
     "date-fns": "^2.29.3",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "use-deep-compare-effect": "^1.8.1"
   }
 }

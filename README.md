@@ -25,10 +25,11 @@ It provides these contributions:
 - [x] Projected durations based on individual velocity
 - [x] Exclude non-business-days from time in progress
 - [x] Support epics and requirements
-- [ ] Project dates for collections of records (releases, epics, features)
+- [x] Project dates for collections of records (releases, epics, features)
 - [ ] Compare original vs remaining estimate projections ("trending late", "trending early")
 - [ ] Explore "Sprint inflation" and "Adjusted minimum capacity" concepts
 - [ ] Support time-based estimation
+- [x] Factor unestimated work into timeline
 
 ## Installing the extension
 
