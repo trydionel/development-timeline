@@ -1,5 +1,5 @@
 import lognormal from '@stdlib/random-base-lognormal'
-import { DurationAnalysis, EstimateAnalysisSettings } from '../analyzeEstimateData'
+import { DurationAnalysis, RecordAnalysisSettings } from '../analyzeEstimateData'
 
 function sum(acc, v) {
   return acc + v
@@ -51,7 +51,7 @@ export function simulate(mean, stddev, N = 1000) {
   }
 }
 
-export function simulateReleasePlanning(features: DurationAnalysis[], settings: EstimateAnalysisSettings) {
+export function simulateReleasePlanning(features: DurationAnalysis[], settings: RecordAnalysisSettings) {
   const { estimateUncertainty, totalAssignees } = settings
 
   // Aggregate durations according to the number of team members working on the release

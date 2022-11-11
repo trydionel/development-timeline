@@ -1,6 +1,6 @@
 import { chain, find } from 'lodash'
 import { differenceInBusinessDays } from 'date-fns'
-import { DurationAnalysis, EstimateAnalysisSettings, ProgressAnalysis } from '../analyzeEstimateData'
+import { DurationAnalysis, RecordAnalysisSettings, ProgressAnalysis } from '../analyzeEstimateData'
 import { EstimatationDataRespose } from '../loadEstimationData'
 
 interface StatusAssignment {
@@ -128,7 +128,7 @@ export function findTransitions(events: Aha.RecordEventRaw[]): StatusTransition[
   return transitions
 }
 
-export function analyzeProgress(data: EstimatationDataRespose, duration: DurationAnalysis, settings: EstimateAnalysisSettings) {
+export function analyzeProgress(data: EstimatationDataRespose, duration: DurationAnalysis, settings: RecordAnalysisSettings) {
   const transitions = findTransitions(data.transitions.raw)
   let timeInProgress = transitions
     .filter(t => t.from.category === "IN_PROGRESS")
@@ -141,9 +141,9 @@ export function analyzeProgress(data: EstimatationDataRespose, duration: Duratio
   } else if (timeInProgress < duration.projected[0]) {
     risk = 'ON_TRACK'
   } else if (timeInProgress > duration.projected[0] && timeInProgress < duration.projected[1]) {
-    risk = 'NEARING_ESTIMATE'
+    risk = 'NEARING'
   } else if (timeInProgress > duration.projected[1]) {
-    risk = 'EXCEEDING_ESTIMATE'
+    risk = 'EXCEEDING'
   }
 
   return {

@@ -1,11 +1,21 @@
-import { DurationAnalysis, EstimateAnalysisSettings, PerformanceAnalysis } from "../analyzeEstimateData"
+import { DurationAnalysis, RecordAnalysisSettings, PerformanceAnalysis } from "../analyzeEstimateData"
 import { statistics } from "./statistical"
 
-export function analyzeDuration(record: Aha.RecordUnion, performance: PerformanceAnalysis, settings: EstimateAnalysisSettings): DurationAnalysis {
-  const uncertainty = settings.estimateUncertainty / 100 // as percentage
+export function analyzeDuration(record: Aha.RecordUnion, performance: PerformanceAnalysis, settings: RecordAnalysisSettings): DurationAnalysis {
+  let uncertainty = settings.estimateUncertainty / 100 // as percentage
 
   // Estimate
-  let estimate = record.originalEstimate
+  let estimate
+  if (settings.estimateField === 'REMAINING') {
+    estimate = record.remainingEstimate
+  } else {
+    if (record.originalEstimate.value) {
+      estimate = record.originalEstimate
+    } else {
+      estimate = record.initialEstimate
+      uncertainty *= 2
+    }
+  }
   if (!estimate.value) {
     estimate = {
       value: settings.defaultEstimate,
@@ -15,10 +25,24 @@ export function analyzeDuration(record: Aha.RecordUnion, performance: Performanc
   }
 
   // Use assignee velocity iff available, avg individual throughput if not
-  const velocity = performance ? (performance.velocity.teamMember[record.assignedToUser.id] || performance.velocity.individual) : settings.defaultVelocity
-  if (!velocity) {
-    console.error(performance, settings)
+  let velocity
+  if (performance) {
+    const assignee = record.assignedToUser
+    if (performance.velocity.teamMember && assignee) {
+      velocity = performance.velocity.teamMember[assignee.id]
+    }
+    
+    if (!velocity) {
+      velocity = performance.velocity.individual
+    }
+  } else {
+    velocity = settings.defaultVelocity
   }
+
+  if (!velocity) {
+    console.error("Unable to determine velocity", performance, settings)
+  }
+
   const mean = estimate.value / velocity
   let ideal, projected, model: DurationAnalysis['model']
   if (settings.fancyMath) {

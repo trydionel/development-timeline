@@ -6,11 +6,11 @@ export interface EstimatationDataRespose {
 }
 
 export interface PerformanceDataResponse {
-  throughput: {
+  throughput?: {
     timeSeries: any[] // No pre-defined type for this?
   }
-  project: Aha.Project
-  users: {
+  project?: Aha.Project
+  users?: {
     totalCount: number
   }
 }
@@ -20,12 +20,17 @@ export interface RelatedFeaturesResponse {
     nodes: Aha.Feature[]
     totalCount: number
   }
+  releases: {
+    nodes: Aha.Release[]
+  }
 }
 
 export type RecordDataRespose = EstimatationDataRespose & PerformanceDataResponse
 
-export interface ReleaseDataRespose extends RelatedFeaturesResponse {
+export interface ReleaseDataRespose {
+  features: Aha.Feature[],
   performance: Record<string, PerformanceDataResponse>
+  releaseDate: string
 }
 
 const RecordFragment = `
@@ -33,7 +38,17 @@ const RecordFragment = `
     id
     name
   }
+  initialEstimate {
+    text
+    value
+    units
+  }
   originalEstimate {
+    text
+    value
+    units
+  }
+  remainingEstimate {
     text
     value
     units
@@ -117,6 +132,11 @@ const RelatedFeaturesQuery = `
       }
       totalCount
     }
+    releases(filters: { id: [$id] }) {
+      nodes {
+        releaseDate
+      }
+    }
   }
 `
 
@@ -124,9 +144,6 @@ export async function loadRecordAnalysisData(record: Aha.RecordUnion): Promise<R
   // Need this for the performance query
   // @ts-ignore-line
   await record.loadAttributes('teamId')
-  if (!record.teamId) {
-    throw new Error('Record not assigned to a team')
-  }
 
   const estimationData = await loadEstimationData(record)
   const performanceData = await loadPerformanceData(record)
@@ -151,7 +168,8 @@ export async function loadReleaseAnalysisData(release: Aha.Release): Promise<Rel
   }
 
   return {
-    ...releaseData,
+    features: releaseData.features.nodes,
+    releaseDate: releaseData.releases.nodes[0].releaseDate,
     performance
   }
 }

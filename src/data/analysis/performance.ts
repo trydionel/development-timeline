@@ -1,16 +1,23 @@
-import { EstimateAnalysisSettings, PerformanceAnalysis } from "../analyzeEstimateData"
+import { RecordAnalysisSettings, PerformanceAnalysis } from "../analyzeEstimateData"
 import { PerformanceDataResponse } from "../loadEstimationData"
 
 const HOURS_IN_WORKDAY = 8
 const WORKDAYS_IN_WEEK = 5
 
-export function analyzePerformance(data: PerformanceDataResponse, settings?: EstimateAnalysisSettings): PerformanceAnalysis {
-  // Velocity: team and individual
-  const weeks = data.throughput.timeSeries
-  if (weeks.length === 0) {
-    return { velocity: {}, duration: { ideal: 0, projected: [0, 0] } } // FIXME
+export function analyzePerformance(data: PerformanceDataResponse, settings: RecordAnalysisSettings): PerformanceAnalysis {
+  if (!data.throughput || data.throughput.timeSeries.length === 0) {
+    return {
+      teamId: '',
+      totalMembers: 0,
+      velocity: {
+        team: 0,
+        individual: settings.defaultVelocity
+      },
+    }
   }
 
+  // Velocity: team and individual
+  const weeks = data.throughput.timeSeries
   const points = weeks.reduce((acc, s) => acc + s.originalEstimate, 0)
   const days = weeks.length * WORKDAYS_IN_WEEK
   const team = points / days

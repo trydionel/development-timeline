@@ -6,6 +6,20 @@ interface StatusTransitionsProps {
   transitions: StatusTransition[]
 }
 
+const TimeInStatusMessage = ({ transition }: { transition: StatusTransition }) => (
+  <>
+    <strong><aha-icon icon="fa-regular fa-users" /> {transition.from.team}</strong><br />
+    {transition.from.status}: {transition.duration.toFixed(1)}d
+  </>
+)
+
+const TimeWithoutTeamMessage = ({ transition }: { transition: StatusTransition }) => (
+  <>
+    <strong>Not assigned to a team</strong><br />
+    {transition.duration.toFixed(1)}d
+  </>
+)
+
 export const StatusTransitions = ({ transitions, ...props }: StatusTransitionsProps) => {
   if (transitions.length === 0) {
     return <></>
@@ -27,8 +41,11 @@ export const StatusTransitions = ({ transitions, ...props }: StatusTransitionsPr
                 </div>
               </aha-tooltip-trigger>
               <aha-tooltip id={`transition-${i}`} placement="bottom">
-                <strong><aha-icon icon="fa-regular fa-users" /> {t.from.team}</strong><br />
-                {t.from.status}: {t.duration.toFixed(1)}d
+                {
+                  t.from.team ?
+                    <TimeInStatusMessage transition={t} /> :
+                    <TimeWithoutTeamMessage transition={t} />
+                }
               </aha-tooltip>
             </>
           )

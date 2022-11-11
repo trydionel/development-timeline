@@ -1,13 +1,14 @@
 {
-  "name": "trydionel.estimate-analysis",
-  "description": "Estimate analysis",
-  "version": "0.0.1",
-  "author": "Jeff Tucker",
+  "name": "jeff-at-aha.development-timeline",
+  "description": "Development timeline",
+  "version": "0.1.0",
+  "author": "Jeff Tucker <support@aha.io>",
   "repository": {
     "type": "git",
     "url": "https://github.com/trydionel/estimation-analysis"
   },
-  "license": "MIT",
+  "license": "UNLICENSED",
+  "private": true,
   "devDependencies": {
     "@types/react": "^16.8.0"
   },

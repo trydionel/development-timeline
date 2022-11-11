@@ -1,18 +1,15 @@
 import React, { useState } from 'react'
-import { EstimateAnalysisSettings } from '../data/analyzeEstimateData'
+import { AnalysisSettingsUnion, ReleaseAnalysisSettings } from '../data/analyzeEstimateData'
 import useDeepCompareEffect from 'use-deep-compare-effect'
 
-export const Parameters = ({ defaultValue, onChange }) => {
-  // Unwrap defaultValue to get rid of the proxy behavior from Aha.Settings object
-  const [parameters, setParameters] = useState<EstimateAnalysisSettings>(() => ({
-    estimateUncertainty: defaultValue.estimateUncertainty,
-    totalAssignees: defaultValue.totalAssignees,
-    fancyMath: defaultValue.fancyMath,
-    defaultEstimate: defaultValue.defaultEstimate,
-    defaultVelocity: defaultValue.defaultVelocity,
-    analyzeProgress: defaultValue.analyzeProgress
-  }))
-  const updateParameter = (payload: Partial<EstimateAnalysisSettings>) => {
+interface ParameterProps {
+  defaultValue: AnalysisSettingsUnion
+  onChange: (parameters: AnalysisSettingsUnion) => void
+}
+
+export const Parameters = ({ defaultValue, onChange }: ParameterProps) => {
+  const [parameters, setParameters] = useState<AnalysisSettingsUnion>(defaultValue)
+  const updateParameter = (payload: Partial<AnalysisSettingsUnion>) => {
     setParameters({
       ...parameters,
       ...payload
@@ -29,15 +26,21 @@ export const Parameters = ({ defaultValue, onChange }) => {
       <div className="mt-4">
         <aha-field layout="vertical">
           <div slot="label">Estimation uncertainty</div>
-          <input type="range" min="1" max="99" step="1" defaultValue={parameters.estimateUncertainty} onChange={e => updateParameter({ estimateUncertainty: e.target.valueAsNumber })} />
+          <aha-flex align-items="center" gap="8px">
+            <input type="range" min="1" max="99" step="1" defaultValue={parameters.estimateUncertainty} onChange={e => updateParameter({ estimateUncertainty: e.target.valueAsNumber })} />
+            <span>{parameters.estimateUncertainty}%</span>
+          </aha-flex>
           <div slot="help">How much inaccuracy do you expect during estimation?</div>
         </aha-field>
-        <br />
-        <aha-field layout="vertical">
-          <div slot="label">Total assignees</div>
-          <input type="number" min="1" defaultValue={parameters.totalAssignees} onChange={e => updateParameter({ totalAssignees: e.target.valueAsNumber })} />
-          <div slot="help">How many developers will work on this?</div>
-        </aha-field>
+        {
+          parameters.hasOwnProperty('totalAssignees') ?
+            <aha-field layout="vertical">
+              <div slot="label">Total assignees</div>
+              <input type="number" min="1" defaultValue={(parameters as ReleaseAnalysisSettings).totalAssignees} onChange={e => updateParameter({ totalAssignees: e.target.valueAsNumber })} />
+              <div slot="help">How many developers will work on this?</div>
+            </aha-field>
+            : ''
+        }
         <aha-field layout="vertical">
           <div slot="label">Default estimate</div>
           <input type="number" defaultValue={parameters.defaultEstimate} onChange={e => updateParameter({ defaultEstimate: e.target.valueAsNumber })} />

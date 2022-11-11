@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { analyzeSingleRecord, RecordAnalysis, EstimateAnalysisSettings } from '../data/analyzeEstimateData'
+import useDeepCompareEffect from 'use-deep-compare-effect'
+import { analyzeSingleRecord, RecordAnalysis, RecordAnalysisSettings } from '../data/analyzeEstimateData'
 import { EstimatationDataRespose, loadRecordAnalysisData } from '../data/loadEstimationData'
 import { FeedbackTooltip } from './FeedbackTooltip'
 import { Parameters } from './Parameters'
@@ -8,18 +9,27 @@ import { StatusTransitions } from './StatusTransitions'
 
 interface ProjectedDurationProps {
   record: Aha.RecordUnion
-  settings: EstimateAnalysisSettings
+  settings: Aha.Settings
+}
+
+function unwrapParameters(settings: Aha.Settings): RecordAnalysisSettings {
+  return {
+    estimateUncertainty: parseFloat(settings.estimateUncertainty as unknown as string),
+    fancyMath: (settings.fancyMath as boolean),
+    defaultEstimate: parseFloat(settings.defaultEstimate as unknown as string),
+    defaultVelocity: parseFloat(settings.defaultVelocity as unknown as string),
+    estimateField: 'ORIGINAL',
+    analyzeProgress: true
+  }
 }
 
 export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) => {
   const [loading, setLoading] = useState(true)
+  const [parameters, setParameters] = useState<RecordAnalysisSettings>(() => unwrapParameters(settings))
   const [data, setData] = useState<EstimatationDataRespose | null>(null)
   const [analysis, setAnalysis] = useState<RecordAnalysis | null>(null)
-  const updateAnalysis = (settings: EstimateAnalysisSettings) => {
-    const analysis = analyzeSingleRecord(data, {
-      ...settings,
-      analyzeProgress: true
-    })
+  const updateAnalysis = (parameters: RecordAnalysisSettings) => {
+    const analysis = analyzeSingleRecord(data, parameters)
     setAnalysis(analysis)
   }
 
@@ -37,16 +47,14 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
   }, [record])
 
   useEffect(() => {
+    setParameters(unwrapParameters(settings))
+  }, [settings])
+
+  useDeepCompareEffect(() => {
     if (!data) return
 
     try {
-      updateAnalysis({
-        estimateUncertainty: settings.estimateUncertainty,
-        totalAssignees: settings.totalAssignees,
-        fancyMath: settings.fancyMath,
-        defaultEstimate: settings.defaultEstimate,
-        analyzeProgress: true
-      })
+      updateAnalysis(parameters)
     } catch (e) {
       console.warn(`Unable to analyze estimate data for ${record.id}`, e)
     }
@@ -63,7 +71,11 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
   return (
     <>
       <div className="ml-2 mt-1">
-        <StatusTransitions transitions={analysis.progress.transitions} className="mb-4" />
+        {
+          analysis.progress ?
+            <StatusTransitions transitions={analysis.progress.transitions} className="mb-4" /> :
+            ''
+        }
 
         <div style={{ display: 'flex', justifyContent: 'space-between' }} className="mb-4">
           <div>
@@ -97,7 +109,7 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
         <FeedbackTooltip />
       </div>
 
-      <Parameters defaultValue={settings} onChange={updateAnalysis} />
+      <Parameters defaultValue={parameters} onChange={updateAnalysis} />
     </>
   )
 }

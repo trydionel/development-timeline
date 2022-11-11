@@ -1,17 +1,30 @@
+import { differenceInBusinessDays } from "date-fns"
 import { analyzeDuration } from "./analysis/duration"
 import { simulateReleasePlanning } from "./analysis/monteCarlo"
 import { analyzePerformance } from "./analysis/performance"
 import { analyzeProgress, StatusTransition } from "./analysis/progress"
 import { RecordDataRespose, ReleaseDataRespose } from "./loadEstimationData"
 
-export interface EstimateAnalysisSettings {
+export type EstimateField = 'INITIAL' | 'ORIGINAL' | 'REMAINING'
+export type RiskLabel = 'NOT_STARTED' | 'EARLY' | 'ON_TRACK' | 'NEARING' | 'EXCEEDING'
+
+export interface CoreEstimateAnalysisSettings {
   estimateUncertainty: number
   fancyMath: boolean
-  totalAssignees: number
   defaultEstimate: number
   defaultVelocity: number
   analyzeProgress: boolean
+  estimateField: EstimateField
 }
+
+export interface RecordAnalysisSettings extends CoreEstimateAnalysisSettings {
+}
+
+export interface ReleaseAnalysisSettings extends CoreEstimateAnalysisSettings {
+  totalAssignees: number
+}
+
+export type AnalysisSettingsUnion = (RecordAnalysisSettings | ReleaseAnalysisSettings)
 
 export interface PerformanceAnalysis {
   teamId: string,
@@ -34,7 +47,7 @@ export interface DurationAnalysis {
 export interface ProgressAnalysis {
   timeInProgress: number
   transitions: StatusTransition[]
-  risk: 'NOT_STARTED' | 'ON_TRACK' | 'NEARING_ESTIMATE' | 'EXCEEDING_ESTIMATE'
+  risk: RiskLabel 
 }
 
 export interface RecordAnalysis {
@@ -42,17 +55,28 @@ export interface RecordAnalysis {
   performance: PerformanceAnalysis
   duration: DurationAnalysis
   progress?: ProgressAnalysis
-  settings: EstimateAnalysisSettings
+  settings: RecordAnalysisSettings
 }
 
 export interface ReleaseAnalysis {
   performance: Record<string, PerformanceAnalysis>
-  features: DurationAnalysis[]
-  duration: DurationAnalysis
-  settings: EstimateAnalysisSettings
+  date: {
+    target: string
+    daysRemaining: number,
+    risk: RiskLabel
+  }
+  original: {
+    features: DurationAnalysis[]
+    duration: DurationAnalysis
+  }
+  remaining: {
+    features: DurationAnalysis[]
+    duration: DurationAnalysis
+  }
+  settings: ReleaseAnalysisSettings
 }
 
-export function analyzeSingleRecord(data: RecordDataRespose, settings: EstimateAnalysisSettings): (RecordAnalysis | null) {
+export function analyzeSingleRecord(data: RecordDataRespose, settings: RecordAnalysisSettings): (RecordAnalysis | null) {
   const record = data.record
   const performance = analyzePerformance(data, settings)
   const duration = analyzeDuration(record, performance, settings)
@@ -71,7 +95,7 @@ export function analyzeSingleRecord(data: RecordDataRespose, settings: EstimateA
   }
 }
 
-export function analyzeRelease(data: ReleaseDataRespose, settings: EstimateAnalysisSettings): (ReleaseAnalysis | null) {
+export function analyzeRelease(data: ReleaseDataRespose, settings: ReleaseAnalysisSettings): (ReleaseAnalysis | null) {
   // TODO:
   // * Order by product value score
   // * Schedule dependant work appropriately
@@ -85,41 +109,69 @@ export function analyzeRelease(data: ReleaseDataRespose, settings: EstimateAnaly
     performance[teamId] = analyzePerformance(data.performance[teamId], settings)
   })
 
-  // Roll up feature estimates for debugging
-  const totalEstimate = data.features.nodes.reduce((sum, f) => sum + f.originalEstimate.value, 0)
-  const estimate: Aha.Estimate = {
-    value: totalEstimate,
-    units: 'POINTS',
-    text: `${totalEstimate}p`
+  // Analyze both original and remaining estimates
+  const analyzeEstimateField = (estimateField: EstimateField) => {
+    // Roll up feature estimates for debugging
+    const totalEstimate = data.features.reduce((sum, f) => sum + (estimateField === 'REMAINING' ? f.remainingEstimate.value : f.originalEstimate.value), 0)
+    const estimate: Aha.Estimate = {
+      value: totalEstimate,
+      units: 'POINTS',
+      text: `${totalEstimate}p`
+    }
+
+    // Analyze duration of each feature according to assigned team
+    const features = data.features.map(f => {
+      const teamId = f.teamId
+      return analyzeDuration(f, performance[teamId], { ...settings, estimateField })
+    })
+
+    // Monte Carlo simulation!
+    const N = 1000;
+    const ptile = (arr, p) => arr[Math.floor(arr.length * p)]
+    const simulations = Array(N).fill(0).map(() => {
+      return simulateReleasePlanning(features, settings)
+    }).sort((a, b) => a - b)
+
+    const duration: DurationAnalysis = {
+      model: settings.fancyMath ? 'LOGNORMAL' : 'SIMPLE',
+      estimate,
+      ideal: ptile(simulations, 0.5),
+      projected: [
+        ptile(simulations, 0.25),
+        ptile(simulations, 0.75)
+      ],
+      velocity: 0
+    }
+
+    return {
+      features,
+      duration
+    }
   }
+  const original = analyzeEstimateField('ORIGINAL')
+  const remaining = analyzeEstimateField('REMAINING')
 
-  // Analyze duration of each feature according to assigned team
-  const features = data.features.nodes.map(f => {
-    const teamId = f.teamId
-    return analyzeDuration(f, performance[teamId], settings)
-  })
-
-  const N = 1000;
-  const ptile = (arr, p) => arr[Math.floor(arr.length * p)]
-  const simulations = Array(N).fill(0).map(() => {
-    return simulateReleasePlanning(features, settings)
-  }).sort((a, b) => a - b)
-
-  const duration: DurationAnalysis = {
-    model: settings.fancyMath ? 'LOGNORMAL' : 'SIMPLE',
-    estimate,
-    ideal: ptile(simulations, 0.5),
-    projected: [
-      ptile(simulations, 0.25),
-      ptile(simulations, 0.75)
-    ],
-    velocity: 0
+  // Analyze target release date against remaining work
+  const target = data.releaseDate
+  const daysRemaining = differenceInBusinessDays(Date.parse(target), new Date())
+  let risk: RiskLabel
+  if (daysRemaining > remaining.duration.projected[0]) {
+    risk = 'EARLY'
+  } else if (daysRemaining < remaining.duration.projected[1]) {
+    risk = 'EXCEEDING'
+  } else {
+    risk = 'ON_TRACK'
   }
 
   return {
     performance,
-    features,
-    duration,
+    date: {
+      target,
+      daysRemaining,
+      risk
+    },
+    original,
+    remaining,
     settings
   }
 }
