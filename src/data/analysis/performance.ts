@@ -1,5 +1,4 @@
 import { RecordAnalysisSettings, PerformanceAnalysis } from "../analyzeEstimateData"
-import { PerformanceDataResponse } from "../loadEstimationData"
 
 const HOURS_IN_WORKDAY = 8
 const WORKDAYS_IN_WEEK = 5

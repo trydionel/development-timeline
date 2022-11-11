@@ -1,6 +1,5 @@
 import React from 'react'
 import { sumBy } from 'lodash'
-import { StatusTransition } from '../data/analysis/progress'
 
 interface StatusTransitionsProps {
   transitions: StatusTransition[]

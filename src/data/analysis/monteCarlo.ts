@@ -1,5 +1,4 @@
 import lognormal from '@stdlib/random-base-lognormal'
-import { DurationAnalysis, ReleaseAnalysisSettings } from '../analyzeEstimateData'
 
 function sum(acc, v) {
   return acc + v

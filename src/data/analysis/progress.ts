@@ -1,22 +1,5 @@
 import { chain, find } from 'lodash'
 import { differenceInBusinessDays } from 'date-fns'
-import { DurationAnalysis, RecordAnalysisSettings, ProgressAnalysis } from '../analyzeEstimateData'
-import { EstimatationDataRespose } from '../loadEstimationData'
-
-interface StatusAssignment {
-  id: string
-  timestamp: Date
-  team: string
-  status: string
-  category: Aha.WorkflowStatusAttributes['internalMeaning']
-  color: string
-}
-
-export interface StatusTransition {
-  duration: number
-  from?: StatusAssignment
-  to?: StatusAssignment
-}
 
 function colorToHex(color: number) {
   return `#${(color & 0xffffff).toString(16)}`

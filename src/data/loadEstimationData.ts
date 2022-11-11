@@ -1,38 +1,3 @@
-export interface EstimatationDataRespose {
-  record: Aha.RecordUnion
-  transitions: {
-    raw: Aha.RecordEventRaw[]
-  }
-}
-
-export interface PerformanceDataResponse {
-  throughput?: {
-    timeSeries: any[] // No pre-defined type for this?
-  }
-  project?: Aha.Project
-  users?: {
-    totalCount: number
-  }
-}
-
-export interface RelatedFeaturesResponse {
-  features: {
-    nodes: Aha.Feature[]
-    totalCount: number
-  }
-  releases: {
-    nodes: Aha.Release[]
-  }
-}
-
-export type RecordDataRespose = EstimatationDataRespose & PerformanceDataResponse
-
-export interface ReleaseDataRespose {
-  features: Aha.Feature[],
-  performance: Record<string, PerformanceDataResponse>
-  releaseDate: string
-}
-
 const RecordFragment = `
   assignedToUser {
     id
@@ -124,7 +89,7 @@ const PerformanceAnalysisQuery = `
   }
 `
 
-const RelatedFeaturesQuery = `
+const ReleaseFeaturesQuery = `
   query ReleaseData($id: ID!) {
     features(filters: { releaseId: $id }, order: [{name: position, direction: ASC}]) {
       nodes {
@@ -140,11 +105,26 @@ const RelatedFeaturesQuery = `
   }
 `
 
+const FeatureRequirementsQuery = `
+  query FeatureRequirements($id: ID!) {
+    feature(id: $id) {
+      requirements {
+        nodes {
+          ${RecordFragment}
+        }
+      }
+    }
+  }
+`
+
 export async function loadRecordAnalysisData(record: Aha.RecordUnion): Promise<RecordDataRespose> {
   // Need this for the performance query
   // @ts-ignore-line
   await record.loadAttributes('teamId')
 
+  // Does this record have children?
+  //   Yes: Perform analysis of all children separately
+  //   No: Perform analysis of single record
   const estimationData = await loadEstimationData(record)
   const performanceData = await loadPerformanceData(record)
 
@@ -216,7 +196,7 @@ export async function loadPerformanceData(record: Aha.RecordUnion): Promise<Perf
 }
 
 export async function loadFeaturesForRelease(release): Promise<RelatedFeaturesResponse> {
-  return await aha.graphQuery<RelatedFeaturesResponse>(RelatedFeaturesQuery,
+  return await aha.graphQuery<RelatedFeaturesResponse>(ReleaseFeaturesQuery,
     {
       variables: {
         id: release.id
