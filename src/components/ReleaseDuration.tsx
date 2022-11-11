@@ -54,11 +54,11 @@ export const ReleaseDuration = ({ record, settings }: ReleaseDurationProps) => {
     if (!data) return
 
     try {
-      updateAnalysis(settings)
+      updateAnalysis(parameters)
     } catch (e) {
       console.warn(`Unable to analyze estimate data for ${record.id}`, e)
     }
-  }, [data, settings])
+  }, [data, parameters])
 
   if (loading) {
     return <aha-spinner />

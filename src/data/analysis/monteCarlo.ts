@@ -1,5 +1,5 @@
 import lognormal from '@stdlib/random-base-lognormal'
-import { DurationAnalysis, RecordAnalysisSettings } from '../analyzeEstimateData'
+import { DurationAnalysis, ReleaseAnalysisSettings } from '../analyzeEstimateData'
 
 function sum(acc, v) {
   return acc + v
@@ -51,7 +51,7 @@ export function simulate(mean, stddev, N = 1000) {
   }
 }
 
-export function simulateReleasePlanning(features: DurationAnalysis[], settings: RecordAnalysisSettings) {
+export function simulateReleasePlanning(features: DurationAnalysis[], settings: ReleaseAnalysisSettings) {
   const { estimateUncertainty, totalAssignees } = settings
 
   // Aggregate durations according to the number of team members working on the release
@@ -76,14 +76,14 @@ export function simulateReleasePlanning(features: DurationAnalysis[], settings: 
     }
 
     if (!sample) {
-      console.error(duration, plans, minPlan, sample)
-      throw new Error('wtf')
+      console.error(duration, plans, minPlan, sample, settings)
+      throw new Error('Unable to sample release duration')
     }
 
     // Allocate it to the assignee that will end up with the minimal time spent
     if (assigneeIndex === -1) {
       console.error(duration, plans, minPlan)
-      throw new Error('wtf')
+      throw new Error('Unable to allocate work to an individual')
     }
     plans[assigneeIndex] += sample
   })

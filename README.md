@@ -6,6 +6,9 @@ It provides these contributions:
 
 * Timeline: A view contribution showing the projected range of how long it will take to complete a feature based on its estimate, estimation uncertainty, and team velocity.
 * Estimation uncertainty: An account setting to measure how much inaccuracy to allow for during estimation. Represented as a percentage from 0-100%. Higher uncertainty means estimates are less reliable.
+* Default estimate: An account setting to specify the default estimate for any unestimated records.
+* Default velocity: An account setting to specify the development velocity for any records not assigned to a team.
+* Total assignees: An account setting to specify the total number of developers that will work on a release.
 
 ## Demo
 

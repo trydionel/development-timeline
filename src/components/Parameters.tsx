@@ -10,6 +10,11 @@ interface ParameterProps {
 export const Parameters = ({ defaultValue, onChange }: ParameterProps) => {
   const [parameters, setParameters] = useState<AnalysisSettingsUnion>(defaultValue)
   const updateParameter = (payload: Partial<AnalysisSettingsUnion>) => {
+    // Check that all values are numeric before bubbling up
+    for (let key in payload) {
+      if (isNaN(payload[key])) return
+    }
+
     setParameters({
       ...parameters,
       ...payload
