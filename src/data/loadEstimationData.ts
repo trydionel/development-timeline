@@ -52,9 +52,22 @@ const RecordAnalysisQuery = (typeField) => `
 `
 
 const PerformanceAnalysisQuery = `
-  query PerformanceData($teamId: ID!, $throughputFilters: RecordEventFilters!) {
-    throughput: recordEvents(filters: $throughputFilters) {
+  query PerformanceData($teamId: ID!, $throughputFilters: RecordEventFilters!, $velocityFilters: RecordEventFilters!) {
+    velocity: recordEvents(filters: $velocityFilters) {
       timeSeries(timeGroup: WEEK, aggregation: SUM) {
+        eventTimeIndex
+        eventType
+        units
+        originalEstimate
+        remainingEstimate
+        seriesRange {
+          from
+          to
+        }
+      }
+    }
+    throughput: recordEvents(filters: $throughputFilters) {
+      timeSeries(timeGroup: WEEK, aggregation: COUNT) {
         eventTimeIndex
         eventType
         units
@@ -109,9 +122,7 @@ const FeatureRequirementsQuery = `
   query FeatureRequirements($id: ID!) {
     feature(id: $id) {
       requirements {
-        nodes {
-          ${RecordFragment}
-        }
+        ${RecordFragment}
       }
     }
   }
@@ -119,16 +130,31 @@ const FeatureRequirementsQuery = `
 
 export async function loadRecordAnalysisData(record: Aha.RecordUnion): Promise<RecordDataRespose> {
   // Need this for the performance query
+  const fields = ['teamId']
+  // if (record.typename === 'Epic') {
+  //   fields.push('featuresCount')
+  // } else if (record.typename === 'Feature') {
+  //   fields.push('requirementsCount')
+  // }
+
   // @ts-ignore-line
-  await record.loadAttributes('teamId')
+  await record.loadAttributes(...fields)
 
   // Does this record have children?
   //   Yes: Perform analysis of all children separately
   //   No: Perform analysis of single record
+  // let children = null
+  // if (record.typename === 'Epic') {
+
+  // } else if (record.typename === 'Feature') {
+  //   children = (await loadRequirementsForFeature(record)).feature.requirements
+  // }
+
   const estimationData = await loadEstimationData(record)
   const performanceData = await loadPerformanceData(record)
 
   return {
+    // children,
     ...estimationData,
     ...performanceData
   }
@@ -178,19 +204,23 @@ export async function loadPerformanceData(record: Aha.RecordUnion): Promise<Perf
   }
 
   const now = new Date()
+  const filters = {
+    createdAt: {
+      gt: new Date(new Date().setDate(now.getDate() - 90)).toISOString(),
+      lt: now.toISOString()
+    },
+    eventType: ["RECORD_COMPLETED"],
+    teamId: record.teamId,
+  }
   return await aha.graphQuery<PerformanceDataResponse>(PerformanceAnalysisQuery,
     {
       variables: {
         teamId: record.teamId,
-        throughputFilters: {
-          createdAt: {
-            gt: new Date(new Date().setDate(now.getDate() - 90)).toISOString(),
-            lt: now.toISOString()
-          },
-          eventType: ["RECORD_COMPLETED"],
-          teamId: record.teamId,
-          units: "POINTS",
+        velocityFilters: {
+          ...filters,
+          units: "POINTS"
         },
+        throughputFilters: filters,
       },
     });
 }
@@ -200,6 +230,15 @@ export async function loadFeaturesForRelease(release): Promise<RelatedFeaturesRe
     {
       variables: {
         id: release.id
+      },
+    });
+}
+
+export async function loadRequirementsForFeature(feature: Aha.Feature): Promise<FeatureRequirementsResponse> {
+  return await aha.graphQuery<FeatureRequirementsResponse>(FeatureRequirementsQuery,
+    {
+      variables: {
+        id: feature.id
       },
     });
 }

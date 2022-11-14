@@ -10,6 +10,9 @@ interface EstimatationDataRespose {
 }
 
 interface PerformanceDataResponse {
+  velocity?: {
+    timeSeries: any[] // No pre-defined type for this?
+  }
   throughput?: {
     timeSeries: any[] // No pre-defined type for this?
   }
@@ -29,7 +32,15 @@ interface RelatedFeaturesResponse {
   }
 }
 
-type RecordDataRespose = EstimatationDataRespose & PerformanceDataResponse
+interface FeatureRequirementsResponse {
+  feature: {
+    requirements: Aha.Requirement[]
+  }
+}
+
+type RecordDataRespose = EstimatationDataRespose & PerformanceDataResponse & {
+  // children?: Aha.RecordUnion[]
+}
 
 interface ReleaseDataRespose {
   features: Aha.Feature[],
