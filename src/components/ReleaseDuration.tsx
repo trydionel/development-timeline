@@ -5,6 +5,7 @@ import { FeedbackTooltip } from './FeedbackTooltip'
 import { Parameters } from './Parameters'
 import useDeepCompareEffect from 'use-deep-compare-effect'
 import { RiskBadge } from './RiskBadge'
+import addBusinessDays from 'date-fns/addBusinessDays'
 
 interface ReleaseDurationProps {
   record: Aha.Release
@@ -18,7 +19,7 @@ function unwrapParameters(settings: Aha.Settings): ReleaseAnalysisSettings {
     totalAssignees: parseFloat(settings.totalAssignees as unknown as string),
     defaultEstimate: parseFloat(settings.defaultEstimate as unknown as string),
     defaultVelocity: parseFloat(settings.defaultVelocity as unknown as string),
-    estimateField: 'ORIGINAL',
+    startDate: new Date().toISOString(),
     analyzeProgress: false
   }
 }
@@ -73,33 +74,17 @@ export const ReleaseDuration = ({ record, settings }: ReleaseDurationProps) => {
       <div className="ml-2 mt-1">
         <div style={{ display: 'flex', justifyContent: 'space-between' }} className="mb-4">
           <div>
-            <h6>Projected duration</h6>
+            <h6>Forecasted delivery</h6>
             <span>
-              {analysis.original.duration.projected[0].toFixed(1)}d
-              <span className="m-1">&mdash;</span>
-              {analysis.original.duration.projected[1].toFixed(1)}d
+              { addBusinessDays(Date.parse(analysis.settings.startDate), analysis.duration.remaining.projected[0]).toLocaleDateString() }
+              <span className="mx-1">&mdash;</span>
+              { addBusinessDays(Date.parse(analysis.settings.startDate), analysis.duration.remaining.projected[1]).toLocaleDateString() }
             </span>
             <span className="ml-1">
               <aha-tooltip-default-trigger aria-describedby="projected-duration-tooltip"></aha-tooltip-default-trigger>
               <aha-tooltip id="projected-duration-tooltip" placement="bottom">
                 <span>
-                  Based on distributing {analysis.original.duration.estimate.text} of work across {analysis.settings.totalAssignees} team members.
-                </span>
-              </aha-tooltip>
-            </span>
-          </div>
-          <div className="text-right">
-            <h6>Remaining duration</h6>
-            <span>
-              {analysis.remaining.duration.projected[0].toFixed(1)}d
-              <span className="m-1">&mdash;</span>
-              {analysis.remaining.duration.projected[1].toFixed(1)}d
-            </span>
-            <span className="ml-1">
-              <aha-tooltip-default-trigger aria-describedby="remaining-duration-tooltip"></aha-tooltip-default-trigger>
-              <aha-tooltip id="remaining-duration-tooltip" placement="bottom">
-                <span>
-                  Based on distributing {analysis.remaining.duration.estimate.text} of work across {analysis.settings.totalAssignees} team members.
+                  Based on distributing {analysis.duration.remaining.estimate.text} of work across {analysis.settings.totalAssignees} team members.
                 </span>
               </aha-tooltip>
             </span>

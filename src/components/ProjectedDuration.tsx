@@ -1,3 +1,4 @@
+import addBusinessDays from 'date-fns/addBusinessDays'
 import React, { useEffect, useState } from 'react'
 import useDeepCompareEffect from 'use-deep-compare-effect'
 import { analyzeSingleRecord } from '../data/analyzeEstimateData'
@@ -18,7 +19,7 @@ function unwrapParameters(settings: Aha.Settings): RecordAnalysisSettings {
     fancyMath: (settings.fancyMath as boolean),
     defaultEstimate: parseFloat(settings.defaultEstimate as unknown as string),
     defaultVelocity: parseFloat(settings.defaultVelocity as unknown as string),
-    estimateField: 'ORIGINAL',
+    startDate: new Date().toISOString(),
     analyzeProgress: true
   }
 }
@@ -37,6 +38,13 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
     (async () => {
       try {
         const data = await loadRecordAnalysisData(record)
+
+        if (data.record.typename !== 'Requirement') {
+          setParameters({
+            ...parameters,
+            startDate: data.record.startDate
+          })
+        }
         setData(data)
       } catch (e) {
         console.warn(`Unable to load estimation data for ${record.id}`, e)
@@ -79,16 +87,20 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
 
         <div style={{ display: 'flex', justifyContent: 'space-between' }} className="mb-4">
           <div>
-            <h6>Projected duration</h6>
+            <h6>Forecasted delivery</h6>
             <span>
-              {analysis.duration.projected[0].toFixed(1)}d
-              <span className="m-1">&mdash;</span>
-              {analysis.duration.projected[1].toFixed(1)}d
+              { addBusinessDays(Date.parse(analysis.settings.startDate), analysis.duration.remaining.projected[0]).toLocaleDateString() }
+              <span className="mx-1">&mdash;</span>
+              { addBusinessDays(Date.parse(analysis.settings.startDate), analysis.duration.remaining.projected[1]).toLocaleDateString() }
             </span>
             <span className="ml-1">
               <aha-tooltip-default-trigger aria-describedby="projected-duration-tooltip"></aha-tooltip-default-trigger>
               <aha-tooltip id="projected-duration-tooltip">
                 <span>
+                  Total development time forecasted at {analysis.duration.remaining.projected[0].toFixed(1)}
+                  <span className="m-1">&mdash;</span>
+                  {analysis.duration.remaining.projected[1].toFixed(1)} working days.
+                  <br />
                   Based on velocity of {analysis.duration.velocity.toFixed(2)}p / day
                   and {analysis.settings.estimateUncertainty}% estimate uncertainty.
                 </span>

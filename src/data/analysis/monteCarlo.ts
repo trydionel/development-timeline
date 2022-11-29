@@ -63,18 +63,18 @@ export function simulateReleasePlanning(features: DurationAnalysis[], settings: 
     // Sample a completion time for the record
     let sample
     if (settings.fancyMath) {
-      const mean = duration.ideal
-      const stdev = duration.ideal * estimateUncertainty // Interpretation: 68% of records are completed within +/- (uncertainty * mean)
+      const mean = duration.remaining.ideal
+      const stdev = duration.remaining.ideal * estimateUncertainty // Interpretation: 68% of records are completed within +/- (uncertainty * mean)
       const meanSq = Math.pow(mean, 2)
       const stdevSq = Math.pow(stdev, 2)
       const mu = Math.log(meanSq / Math.sqrt(meanSq + stdevSq))
       const sigma = Math.sqrt(Math.log(1 + stdevSq / meanSq))
       sample = lognormal(mu, sigma)
     } else {
-      sample = rand(...duration.projected)
+      sample = rand(...duration.remaining.projected)
     }
 
-    if (!sample) {
+    if (typeof sample !== 'number') {
       console.error(duration, plans, minPlan, sample, settings)
       throw new Error('Unable to sample release duration')
     }

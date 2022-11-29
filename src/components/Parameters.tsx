@@ -1,5 +1,5 @@
+import format from 'date-fns/format'
 import React, { useState } from 'react'
-import { AnalysisSettingsUnion, ReleaseAnalysisSettings } from '../data/analyzeEstimateData'
 import useDeepCompareEffect from 'use-deep-compare-effect'
 
 interface ParameterProps {
@@ -12,6 +12,7 @@ export const Parameters = ({ defaultValue, onChange }: ParameterProps) => {
   const updateParameter = (payload: Partial<AnalysisSettingsUnion>) => {
     // Check that all values are numeric before bubbling up
     for (let key in payload) {
+      if (key === 'startDate') continue // skip startDate validation
       if (isNaN(payload[key])) return
     }
 
@@ -55,6 +56,11 @@ export const Parameters = ({ defaultValue, onChange }: ParameterProps) => {
           <div slot="label">Default velocity</div>
           <input type="number" defaultValue={parameters.defaultVelocity} onChange={e => updateParameter({ defaultVelocity: e.target.valueAsNumber })} />
           <div slot="help">Default velocity for work not assigned to a team (points / person / day)</div>
+        </aha-field>
+        <aha-field layout="vertical">
+          <div slot="label">Start date</div>
+          <input type="date" defaultValue={format(Date.parse(parameters.startDate), 'yyyy-MM-dd')} onChange={e => updateParameter({ startDate: e.target.value })} />
+          <div slot="help">When the work will begin</div>
         </aha-field>
       </div>
     </details>

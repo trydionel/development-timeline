@@ -18,6 +18,7 @@ const RecordFragment = `
     value
     units
   }
+  startDate
   teamId
   teamWorkflowStatus {
     internalMeaning

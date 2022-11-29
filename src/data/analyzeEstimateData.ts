@@ -37,30 +37,28 @@ export function analyzeRelease(data: ReleaseDataRespose, settings: ReleaseAnalys
     performance[teamId] = analyzePerformance(data.performance[teamId], settings)
   })
 
-  // Analyze both original and remaining estimates
-  const analyzeEstimateField = (estimateField: EstimateField) => {
-    // Roll up feature estimates for debugging
-    const totalEstimate = data.features.reduce((sum, f) => sum + (estimateField === 'REMAINING' ? f.remainingEstimate.value : f.originalEstimate.value), 0)
-    const estimate: Aha.Estimate = {
-      value: totalEstimate,
-      units: 'POINTS',
-      text: `${totalEstimate}p`
-    }
+  const totalEstimate = data.features.reduce((sum, f) => sum + (f.remainingEstimate.value), 0)
+  const estimate: Aha.Estimate = {
+    value: totalEstimate,
+    units: 'POINTS',
+    text: `${totalEstimate}p`
+  }
 
-    // Analyze duration of each feature according to assigned team
-    const features = data.features.map(f => {
-      const teamId = f.teamId
-      return analyzeDuration(f, performance[teamId], { ...settings, estimateField })
-    })
+  // Analyze duration of each feature according to assigned team
+  const durations = data.features.map(f => {
+    const teamId = f.teamId
+    return analyzeDuration(f, performance[teamId], settings)
+  })
 
-    // Monte Carlo simulation!
-    const N = 1000;
-    const ptile = (arr, p) => arr[Math.floor(arr.length * p)]
-    const simulations = Array(N).fill(0).map(() => {
-      return simulateReleasePlanning(features, settings)
-    }).sort((a, b) => a - b)
+  // Monte Carlo simulation!
+  const N = 1000;
+  const ptile = (arr, p) => arr[Math.floor(arr.length * p)]
+  const simulations = Array(N).fill(0).map(() => {
+    return simulateReleasePlanning(durations, settings)
+  }).sort((a, b) => a - b)
 
-    const duration: DurationAnalysis = {
+  const duration: DurationAnalysis = {
+    remaining: {
       model: settings.fancyMath ? 'LOGNORMAL' : 'SIMPLE',
       estimate,
       ideal: ptile(simulations, 0.5),
@@ -68,24 +66,17 @@ export function analyzeRelease(data: ReleaseDataRespose, settings: ReleaseAnalys
         ptile(simulations, 0.25),
         ptile(simulations, 0.75)
       ],
-      velocity: 0
-    }
-
-    return {
-      features,
-      duration
-    }
+    },
+    velocity: 0
   }
-  const original = analyzeEstimateField('ORIGINAL')
-  const remaining = analyzeEstimateField('REMAINING')
 
   // Analyze target release date against remaining work
   const target = data.releaseDate
   const daysRemaining = differenceInBusinessDays(Date.parse(target), new Date())
   let risk: RiskLabel
-  if (daysRemaining > remaining.duration.projected[0]) {
+  if (daysRemaining > duration.remaining.projected[0]) {
     risk = 'EARLY'
-  } else if (daysRemaining < remaining.duration.projected[1]) {
+  } else if (daysRemaining < duration.remaining.projected[1]) {
     risk = 'EXCEEDING'
   } else {
     risk = 'ON_TRACK'
@@ -98,8 +89,7 @@ export function analyzeRelease(data: ReleaseDataRespose, settings: ReleaseAnalys
       daysRemaining,
       risk
     },
-    original,
-    remaining,
+    duration,
     settings
   }
 }

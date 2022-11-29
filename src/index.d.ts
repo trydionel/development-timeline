@@ -76,7 +76,7 @@ interface CoreEstimateAnalysisSettings {
   defaultEstimate: number
   defaultVelocity: number
   analyzeProgress: boolean
-  estimateField: EstimateField
+  startDate: string
 }
 
 interface RecordAnalysisSettings extends CoreEstimateAnalysisSettings {
@@ -98,12 +98,17 @@ interface PerformanceAnalysis {
   }
 }
 
-interface DurationAnalysis {
-  model: 'SIMPLE' | 'LOGNORMAL'
+interface ForecastAnalysis {
   estimate: Aha.Estimate
-  velocity: number
+  model: 'SIMPLE' | 'LOGNORMAL'
   ideal: number
   projected: [number, number]
+}
+
+interface DurationAnalysis {
+  velocity: number
+  initial?: ForecastAnalysis
+  remaining: ForecastAnalysis
 }
 
 interface ProgressAnalysis {
@@ -127,13 +132,6 @@ interface ReleaseAnalysis {
     daysRemaining: number,
     risk: RiskLabel
   }
-  original: {
-    features: DurationAnalysis[]
-    duration: DurationAnalysis
-  }
-  remaining: {
-    features: DurationAnalysis[]
-    duration: DurationAnalysis
-  }
+  duration: DurationAnalysis
   settings: ReleaseAnalysisSettings
 }

@@ -121,11 +121,11 @@ export function analyzeProgress(data: EstimatationDataRespose, duration: Duratio
   let risk: ProgressAnalysis['risk']
   if (timeInProgress === 0) {
     risk = 'NOT_STARTED'
-  } else if (timeInProgress < duration.projected[0]) {
+  } else if (timeInProgress < duration.initial.projected[0]) {
     risk = 'ON_TRACK'
-  } else if (timeInProgress > duration.projected[0] && timeInProgress < duration.projected[1]) {
+  } else if (timeInProgress > duration.initial.projected[0] && timeInProgress < duration.initial.projected[1]) {
     risk = 'NEARING'
-  } else if (timeInProgress > duration.projected[1]) {
+  } else if (timeInProgress > duration.initial.projected[1]) {
     risk = 'EXCEEDING'
   }
 
