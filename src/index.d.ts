@@ -42,6 +42,12 @@ type RecordDataRespose = EstimatationDataRespose & PerformanceDataResponse & {
   // children?: Aha.RecordUnion[]
 }
 
+interface FeatureDataResponse extends EstimatationDataRespose {
+  record: Aha.Feature
+  requirements: Aha.Requirement[]
+  performance: Record<string, PerformanceDataResponse>
+}
+
 interface ReleaseDataRespose {
   features: Aha.Feature[],
   performance: Record<string, PerformanceDataResponse>
@@ -53,7 +59,7 @@ interface ReleaseDataRespose {
  */
 
 type EstimateField = 'INITIAL' | 'ORIGINAL' | 'REMAINING'
-type RiskLabel = 'NOT_STARTED' | 'EARLY' | 'ON_TRACK' | 'NEARING' | 'EXCEEDING'
+type RiskLabel = 'NOT_STARTED' | 'EARLY' | 'ON_TRACK' | 'NEARING' | 'EXCEEDING' | 'UNKNOWN'
 
 interface StatusAssignment {
   id: string
@@ -122,6 +128,14 @@ interface RecordAnalysis {
   performance: PerformanceAnalysis
   duration: DurationAnalysis
   progress?: ProgressAnalysis
+  settings: RecordAnalysisSettings
+}
+
+interface FeatureAnalysis {
+  record: Aha.Feature
+  performance: Record<string, PerformanceAnalysis>
+  duration: DurationAnalysis
+  progress: ProgressAnalysis
   settings: RecordAnalysisSettings
 }
 

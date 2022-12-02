@@ -5,7 +5,7 @@ import { FeedbackTooltip } from './FeedbackTooltip'
 import { Parameters } from './Parameters'
 import useDeepCompareEffect from 'use-deep-compare-effect'
 import { RiskBadge } from './RiskBadge'
-import addBusinessDays from 'date-fns/addBusinessDays'
+import { ForecastedDelivery } from './ForecastedDelivery'
 
 interface ReleaseDurationProps {
   record: Aha.Release
@@ -75,19 +75,7 @@ export const ReleaseDuration = ({ record, settings }: ReleaseDurationProps) => {
         <div style={{ display: 'flex', justifyContent: 'space-between' }} className="mb-4">
           <div>
             <h6>Forecasted delivery</h6>
-            <span>
-              { addBusinessDays(Date.parse(analysis.settings.startDate), analysis.duration.remaining.projected[0]).toLocaleDateString() }
-              <span className="mx-1">&mdash;</span>
-              { addBusinessDays(Date.parse(analysis.settings.startDate), analysis.duration.remaining.projected[1]).toLocaleDateString() }
-            </span>
-            <span className="ml-1">
-              <aha-tooltip-default-trigger aria-describedby="projected-duration-tooltip"></aha-tooltip-default-trigger>
-              <aha-tooltip id="projected-duration-tooltip" placement="bottom">
-                <span>
-                  Based on distributing {analysis.duration.remaining.estimate.text} of work across {analysis.settings.totalAssignees} team members.
-                </span>
-              </aha-tooltip>
-            </span>
+            <ForecastedDelivery analysis={analysis} />
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { StyleHTMLAttributes } from 'react'
 import { sumBy } from 'lodash'
 
 interface StatusTransitionsProps {
@@ -19,6 +19,22 @@ const TimeWithoutTeamMessage = ({ transition }: { transition: StatusTransition }
   </>
 )
 
+const generateStyle = (t: StatusTransition, totalDuration: number) => {
+  const style: React.CSSProperties = {
+      width: `${100 * t.duration / totalDuration}%`,
+      display: 'inline-block',
+      height: 12
+  }
+
+  if (t.from.team) {
+    style.backgroundColor = t.from.color
+  } else {
+    style.background = 'repeating-linear-gradient(45deg, #eee, #eee 10px, #ccc 10px, #ccc 20px)'
+  }
+
+  return style
+}
+
 export const StatusTransitions = ({ transitions, ...props }: StatusTransitionsProps) => {
   if (transitions.length === 0) {
     return <></>
@@ -35,7 +51,7 @@ export const StatusTransitions = ({ transitions, ...props }: StatusTransitionsPr
           return (
             <>
               <aha-tooltip-trigger trigger={`transition-${i}`} >
-                <div key={i} style={{ backgroundColor: t.from.color, width: `${100 * t.duration / totalDuration}%`, display: 'inline-block', height: 12 }}>
+                <div key={i} style={generateStyle(t, totalDuration)}>
                   &nbsp;
                 </div>
               </aha-tooltip-trigger>

@@ -1,6 +1,6 @@
 import { differenceInBusinessDays } from "date-fns"
 import { analyzeDuration } from "./analysis/duration"
-import { simulateReleasePlanning } from "./analysis/monteCarlo"
+import { monteCarlo, simulatePlanning } from "./analysis/monteCarlo"
 import { analyzePerformance } from "./analysis/performance"
 import { analyzeProgress } from "./analysis/progress"
 
@@ -23,6 +23,42 @@ export function analyzeSingleRecord(data: RecordDataRespose, settings: RecordAna
   }
 }
 
+export function analyzeFeature(data: FeatureDataResponse, settings: RecordAnalysisSettings): (FeatureAnalysis | null) {
+  const record = data.record
+
+  // Analyze performance for each team
+  const performance = {} 
+  Object.keys(data.performance).forEach(teamId => {
+    performance[teamId] = analyzePerformance(data.performance[teamId], settings)
+  })
+
+  // Analyze duration of each requirement according to assigned team (if any)
+  let duration
+  if (data.requirements.length > 0) {
+    const durations = data.requirements.map(req => {
+      const teamId = req.teamId
+      return analyzeDuration(req, performance[teamId], settings)
+    })
+    duration = monteCarlo(durations, settings)
+  } else {
+    duration = analyzeDuration(record, performance[record.teamId], settings)
+  }
+
+  let progress = null
+  if (settings.analyzeProgress) {
+    progress = analyzeProgress(data, duration, settings)
+  }
+
+  return {
+    record: record as Aha.Feature,
+    performance,
+    progress,
+    duration,
+    settings
+  }
+}
+
+
 export function analyzeRelease(data: ReleaseDataRespose, settings: ReleaseAnalysisSettings): (ReleaseAnalysis | null) {
   // TODO:
   // * Order by product value score
@@ -37,13 +73,6 @@ export function analyzeRelease(data: ReleaseDataRespose, settings: ReleaseAnalys
     performance[teamId] = analyzePerformance(data.performance[teamId], settings)
   })
 
-  const totalEstimate = data.features.reduce((sum, f) => sum + (f.remainingEstimate.value), 0)
-  const estimate: Aha.Estimate = {
-    value: totalEstimate,
-    units: 'POINTS',
-    text: `${totalEstimate}p`
-  }
-
   // Analyze duration of each feature according to assigned team
   const durations = data.features.map(f => {
     const teamId = f.teamId
@@ -51,24 +80,7 @@ export function analyzeRelease(data: ReleaseDataRespose, settings: ReleaseAnalys
   })
 
   // Monte Carlo simulation!
-  const N = 1000;
-  const ptile = (arr, p) => arr[Math.floor(arr.length * p)]
-  const simulations = Array(N).fill(0).map(() => {
-    return simulateReleasePlanning(durations, settings)
-  }).sort((a, b) => a - b)
-
-  const duration: DurationAnalysis = {
-    remaining: {
-      model: settings.fancyMath ? 'LOGNORMAL' : 'SIMPLE',
-      estimate,
-      ideal: ptile(simulations, 0.5),
-      projected: [
-        ptile(simulations, 0.25),
-        ptile(simulations, 0.75)
-      ],
-    },
-    velocity: 0
-  }
+  const duration = monteCarlo(durations, settings)
 
   // Analyze target release date against remaining work
   const target = data.releaseDate

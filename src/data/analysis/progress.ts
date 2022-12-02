@@ -1,5 +1,6 @@
 import { chain, find } from 'lodash'
 import { differenceInBusinessDays } from 'date-fns'
+import addBusinessDays from 'date-fns/addBusinessDays'
 
 function colorToHex(color: number) {
   return `#${(color & 0xffffff).toString(16)}`
@@ -117,16 +118,33 @@ export function analyzeProgress(data: EstimatationDataRespose, duration: Duratio
     .filter(t => t.from.category === "IN_PROGRESS")
     .reduce((acc, t) => acc + t.duration, 0)
 
-  // Risk
-  let risk: ProgressAnalysis['risk']
-  if (timeInProgress === 0) {
-    risk = 'NOT_STARTED'
-  } else if (timeInProgress < duration.initial.projected[0]) {
-    risk = 'ON_TRACK'
-  } else if (timeInProgress > duration.initial.projected[0] && timeInProgress < duration.initial.projected[1]) {
-    risk = 'NEARING'
-  } else if (timeInProgress > duration.initial.projected[1]) {
-    risk = 'EXCEEDING'
+  // * If we have a due date: whether the remaining work exceeds the due date
+  // * If no due date: whether the remaining work exceeds the initial forecasted completion date
+  let risk: ProgressAnalysis['risk'] = 'UNKNOWN'
+  if (data.record.typename !== 'Requirement' && data.record.dueDate) {
+    const dueDate = new Date(Date.parse(data.record.dueDate))
+    const warningDate = addBusinessDays(dueDate, -5)
+    const forecasted = addBusinessDays(new Date(), duration.remaining.ideal)
+
+    if (timeInProgress === 0) {
+      risk = 'NOT_STARTED'
+    } else if (forecasted >= warningDate && forecasted < dueDate) {
+      risk = 'NEARING'
+    } else if (forecasted >= dueDate) {
+      risk = 'EXCEEDING'
+    } else {
+      risk = 'ON_TRACK'
+    }
+  } else if (duration.initial) {
+    if (timeInProgress === 0) {
+      risk = 'NOT_STARTED'
+    } else if (timeInProgress < duration.initial.projected[0]) {
+      risk = 'ON_TRACK'
+    } else if (timeInProgress > duration.initial.projected[0] && timeInProgress < duration.initial.projected[1]) {
+      risk = 'NEARING'
+    } else if (timeInProgress > duration.initial.projected[1]) {
+      risk = 'EXCEEDING'
+    }
   }
 
   return {

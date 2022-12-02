@@ -8,54 +8,42 @@ function rand(a, b) {
   return Math.random() * (b - a) + a
 }
 
-export function simulate(mean, stddev, N = 1000) {
-  const mu = Math.log(mean)
-  const sigma = 0.25 // uncertainty??
+function percentile(arr, p) {
+  return arr[Math.floor(arr.length * p)]
+}
 
-  const samples = Array(N).fill(0).map(() => lognormal(mu, sigma)).sort()
-  const min = Math.min(...samples)
-  const max = Math.max(...samples)
-  const range = max - min
-  const avg = samples.reduce(sum, 0) / N
-  const median = samples[N / 2]
-  const iqr = samples[3 * N / 4] - samples[N / 4]
-  
-  const bins = 50
-  const binSize = range / bins
-  const histogram = Array(bins).fill(0)
-
-  let bin = 0
-  let threshold = 0
-  for (let i = 0; i < N; i++) {
-    const sample = samples[i]
-
-    while (sample >= threshold) {
-      bin++
-      threshold = bin * binSize
-    }
-
-    histogram[bin]++
+export function monteCarlo(durations, settings, N = 1000): DurationAnalysis {
+  const totalEstimate = durations.reduce((sum, d) => sum + (d.remaining.estimate.value), 0)
+  const estimate: Aha.Estimate = {
+    value: totalEstimate,
+    units: 'POINTS',
+    text: `${totalEstimate}p`
   }
 
-  
+  const simulations = Array(N).fill(0).map(() => {
+    return simulatePlanning(durations, settings)
+  }).sort((a, b) => a - b)
+
   return {
-    samples,
-    max,
-    min,
-    range,
-    avg,
-    median,
-    iqr,
-    histogram
+    remaining: {
+      model: settings.fancyMath ? 'LOGNORMAL' : 'SIMPLE',
+      estimate,
+      ideal: percentile(simulations, 0.5),
+      projected: [
+        percentile(simulations, 0.25),
+        percentile(simulations, 0.75)
+      ],
+    },
+    velocity: 0
   }
 }
 
-export function simulateReleasePlanning(features: DurationAnalysis[], settings: ReleaseAnalysisSettings) {
+export function simulatePlanning(durations: DurationAnalysis[], settings: ReleaseAnalysisSettings) {
   const { estimateUncertainty, totalAssignees } = settings
 
   // Aggregate durations according to the number of team members working on the release
   const plans = Array(totalAssignees).fill(0)
-  features.forEach(duration => {
+  durations.forEach(duration => {
     // Find the assignee that has spent the least time working so far
     const minPlan = Math.min(...plans)
     const assigneeIndex = plans.findIndex(p => Math.abs(p - minPlan) < 0.00001) // wheee floating points

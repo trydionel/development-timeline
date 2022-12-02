@@ -1,4 +1,4 @@
-const RecordFragment = `
+const CommonRecordFragment = `
   assignedToUser {
     id
     name
@@ -18,7 +18,6 @@ const RecordFragment = `
     value
     units
   }
-  startDate
   teamId
   teamWorkflowStatus {
     internalMeaning
@@ -28,7 +27,9 @@ const RecordFragment = `
 const RecordAnalysisQuery = (typeField) => `
   query EstimationData($id: ID!, $transitionFilters: RecordEventFilters!) {
     record: ${typeField}(id: $id) {
-      ${RecordFragment}
+      ${CommonRecordFragment}
+      ${typeField !== 'requirement' ? 'startDate' : '' }
+      ${typeField !== 'requirement' ? 'dueDate' : '' }
     }
     transitions: recordEvents(filters: $transitionFilters) {
       raw {
@@ -107,7 +108,8 @@ const ReleaseFeaturesQuery = `
   query ReleaseData($id: ID!) {
     features(filters: { releaseId: $id }, order: [{name: position, direction: ASC}]) {
       nodes {
-        ${RecordFragment}
+        ${CommonRecordFragment}
+        startDate
       }
       totalCount
     }
@@ -123,13 +125,13 @@ const FeatureRequirementsQuery = `
   query FeatureRequirements($id: ID!) {
     feature(id: $id) {
       requirements {
-        ${RecordFragment}
+        ${CommonRecordFragment}
       }
     }
   }
 `
 
-export async function loadRecordAnalysisData(record: Aha.RecordUnion): Promise<RecordDataRespose> {
+export async function loadRecordAnalysisData(record: Aha.RecordUnion): Promise<RecordDataRespose | FeatureDataResponse> {
   // Need this for the performance query
   const fields = ['teamId']
   // if (record.typename === 'Epic') {
@@ -144,20 +146,38 @@ export async function loadRecordAnalysisData(record: Aha.RecordUnion): Promise<R
   // Does this record have children?
   //   Yes: Perform analysis of all children separately
   //   No: Perform analysis of single record
-  // let children = null
-  // if (record.typename === 'Epic') {
-
-  // } else if (record.typename === 'Feature') {
-  //   children = (await loadRequirementsForFeature(record)).feature.requirements
-  // }
+  let requirements = null
+  if (record.typename === 'Epic') {
+    // FIXME
+  } else if (record.typename === 'Feature') {
+    requirements = (await loadRequirementsForFeature(record)).feature.requirements
+  }
 
   const estimationData = await loadEstimationData(record)
   const performanceData = await loadPerformanceData(record)
 
   return {
-    // children,
+    requirements,
     ...estimationData,
     ...performanceData
+  }
+}
+
+export async function loadFeatureAnalysisData(record: Aha.Feature): Promise<FeatureDataResponse> {
+  const requirements = (await loadRequirementsForFeature(record)).feature.requirements
+  const estimationData = await loadEstimationData(record)
+
+  const performance = {}
+  for (let req of requirements) {
+    if (req.teamId && !performance[req.teamId]) {
+      performance[req.teamId] = await loadPerformanceData(req)
+    }
+  }
+
+  return {
+    requirements,
+    performance,
+    ...estimationData
   }
 }
 
