@@ -1,6 +1,6 @@
 import { differenceInBusinessDays } from "date-fns"
 import { analyzeDuration } from "./analysis/duration"
-import { monteCarlo, simulatePlanning } from "./analysis/monteCarlo"
+import { monteCarlo } from "./analysis/monteCarlo"
 import { analyzePerformance } from "./analysis/performance"
 import { analyzeProgress } from "./analysis/progress"
 
@@ -63,6 +63,7 @@ export function analyzeRelease(data: ReleaseDataRespose, settings: ReleaseAnalys
   // TODO:
   // * Order by product value score
   // * Schedule dependant work appropriately
+  // * Place urgent work on top
   // * Ensure work assigned to the team stays on that team
   // * Ensure assignees have only one WIP
   // * Monte Carlo simulation!

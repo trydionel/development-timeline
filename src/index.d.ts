@@ -1,6 +1,7 @@
 /**
  * Network response types
  */
+type TeamID = string
 
 interface EstimatationDataRespose {
   record: Aha.RecordUnion
@@ -45,12 +46,12 @@ type RecordDataRespose = EstimatationDataRespose & PerformanceDataResponse & {
 interface FeatureDataResponse extends EstimatationDataRespose {
   record: Aha.Feature
   requirements: Aha.Requirement[]
-  performance: Record<string, PerformanceDataResponse>
+  performance: Record<TeamID, PerformanceDataResponse>
 }
 
 interface ReleaseDataRespose {
   features: Aha.Feature[],
-  performance: Record<string, PerformanceDataResponse>
+  performance: Record<TeamID, PerformanceDataResponse>
   releaseDate: string
 }
 
@@ -88,11 +89,15 @@ interface CoreEstimateAnalysisSettings {
 interface RecordAnalysisSettings extends CoreEstimateAnalysisSettings {
 }
 
+interface FeatureAnalysisSettings extends CoreEstimateAnalysisSettings {
+  totalAssignees: number
+}
+
 interface ReleaseAnalysisSettings extends CoreEstimateAnalysisSettings {
   totalAssignees: number
 }
 
-type AnalysisSettingsUnion = (RecordAnalysisSettings | ReleaseAnalysisSettings)
+type AnalysisSettingsUnion = (RecordAnalysisSettings | FeatureAnalysisSettings | ReleaseAnalysisSettings)
 
 interface PerformanceAnalysis {
   teamId: string,
@@ -104,6 +109,8 @@ interface PerformanceAnalysis {
   }
 }
 
+type TeamPerformanceMap = Record<TeamID, PerformanceAnalysis>
+
 interface ForecastAnalysis {
   estimate: Aha.Estimate
   model: 'SIMPLE' | 'LOGNORMAL'
@@ -113,6 +120,7 @@ interface ForecastAnalysis {
 
 interface DurationAnalysis {
   velocity: number
+  basis: 'ASSIGNEE' | 'TEAM' | 'DEFAULT'
   initial?: ForecastAnalysis
   remaining: ForecastAnalysis
 }
@@ -133,14 +141,14 @@ interface RecordAnalysis {
 
 interface FeatureAnalysis {
   record: Aha.Feature
-  performance: Record<string, PerformanceAnalysis>
+  performance: TeamPerformanceMap
   duration: DurationAnalysis
   progress: ProgressAnalysis
   settings: RecordAnalysisSettings
 }
 
 interface ReleaseAnalysis {
-  performance: Record<string, PerformanceAnalysis>
+  performance: TeamPerformanceMap
   date: {
     target: string
     daysRemaining: number,

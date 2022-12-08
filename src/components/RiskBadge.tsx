@@ -1,5 +1,4 @@
 import React from 'react'
-import { RiskLabel } from '../data/analyzeEstimateData'
 
 export const RiskBadge = ({ risk }: { risk: RiskLabel }) => {
   switch (risk) {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import useDeepCompareEffect from 'use-deep-compare-effect'
 import { analyzeFeature } from '../data/analyzeEstimateData'
-import { loadFeatureAnalysisData } from '../data/loadEstimationData'
+import { loadFeatureAnalysisData } from '../data/loaders/feature'
 import { FeedbackTooltip } from './FeedbackTooltip'
 import { ForecastedDelivery } from './ForecastedDelivery'
 import { Parameters } from './Parameters'
@@ -13,10 +13,11 @@ interface FeatureDurationProps {
   settings: Aha.Settings
 }
 
-function unwrapParameters(settings: Aha.Settings): RecordAnalysisSettings {
+function unwrapParameters(settings: Aha.Settings): FeatureAnalysisSettings {
   return {
     estimateUncertainty: parseFloat(settings.estimateUncertainty as unknown as string),
     fancyMath: (settings.fancyMath as boolean),
+    totalAssignees: parseFloat(settings.totalAssignees as unknown as string),
     defaultEstimate: parseFloat(settings.defaultEstimate as unknown as string),
     defaultVelocity: parseFloat(settings.defaultVelocity as unknown as string),
     startDate: new Date().toISOString(),
@@ -26,10 +27,10 @@ function unwrapParameters(settings: Aha.Settings): RecordAnalysisSettings {
 
 export const FeatureDuration = ({ record, settings }: FeatureDurationProps) => {
   const [loading, setLoading] = useState(true)
-  const [parameters, setParameters] = useState<RecordAnalysisSettings>(() => unwrapParameters(settings))
+  const [parameters, setParameters] = useState<FeatureAnalysisSettings>(() => unwrapParameters(settings))
   const [data, setData] = useState<FeatureDataResponse | null>(null)
   const [analysis, setAnalysis] = useState<FeatureAnalysis | null>(null)
-  const updateAnalysis = (parameters: RecordAnalysisSettings) => {
+  const updateAnalysis = (parameters: FeatureAnalysisSettings) => {
     const analysis = analyzeFeature(data, parameters)
     setAnalysis(analysis)
   }
@@ -96,11 +97,13 @@ export const FeatureDuration = ({ record, settings }: FeatureDurationProps) => {
             </div>
           </div>
         </div>
-
-        <FeedbackTooltip />
       </div>
 
       <Parameters defaultValue={parameters} onChange={updateAnalysis} />
+
+      <div className="ml-2 my-1">
+        <FeedbackTooltip />
+      </div>
     </>
   )
 }

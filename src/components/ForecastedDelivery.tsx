@@ -12,13 +12,15 @@ export const ForecastedDelivery = ({ analysis }: { analysis: RecordAnalysis | Fe
       <aha-tooltip-default-trigger aria-describedby="forecasted-delivery-tooltip"></aha-tooltip-default-trigger>
       <aha-tooltip id="forecasted-delivery-tooltip">
         <span>
-          Total development time forecasted at {analysis.duration.remaining.projected[0].toFixed(1)}
+          Total development time forecasted at <strong>{analysis.duration.remaining.projected[0].toFixed(1)}
           <span className="m-1">&mdash;</span>
-          {analysis.duration.remaining.projected[1].toFixed(1)} working days.
+          {analysis.duration.remaining.projected[1].toFixed(1)} working days.</strong>
           <br />
-          Based on completing {analysis.duration.remaining.estimate.text} of work
-          with a velocity of {analysis.duration.velocity.toFixed(2)}p / day
-          and {analysis.settings.estimateUncertainty}% estimate uncertainty.
+          <br />
+          Based on completing <strong>{analysis.duration.remaining.estimate.text}</strong> of work
+          with {analysis.duration.basis.toLowerCase()} velocity
+          <br />
+          of <strong>{analysis.duration.velocity.toFixed(2)}p / person / day</strong> and <strong>{analysis.settings.estimateUncertainty}%</strong> estimate uncertainty.
         </span>
       </aha-tooltip>
     </span>

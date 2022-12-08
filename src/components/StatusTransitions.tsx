@@ -29,7 +29,7 @@ const generateStyle = (t: StatusTransition, totalDuration: number) => {
   if (t.from.team) {
     style.backgroundColor = t.from.color
   } else {
-    style.background = 'repeating-linear-gradient(45deg, #eee, #eee 10px, #ccc 10px, #ccc 20px)'
+    style.background = 'repeating-linear-gradient(-45deg, #eee, #eee 5px, #fff 5px, #fff 10px)'
   }
 
   return style

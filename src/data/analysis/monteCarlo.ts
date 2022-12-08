@@ -12,13 +12,14 @@ function percentile(arr, p) {
   return arr[Math.floor(arr.length * p)]
 }
 
-export function monteCarlo(durations, settings, N = 1000): DurationAnalysis {
+export function monteCarlo(durations: DurationAnalysis[], settings, N = 1000): DurationAnalysis {
   const totalEstimate = durations.reduce((sum, d) => sum + (d.remaining.estimate.value), 0)
   const estimate: Aha.Estimate = {
     value: totalEstimate,
     units: 'POINTS',
     text: `${totalEstimate}p`
   }
+  const velocity = durations.map(d => d.velocity).reduce(sum) / durations.length
 
   const simulations = Array(N).fill(0).map(() => {
     return simulatePlanning(durations, settings)
@@ -34,7 +35,8 @@ export function monteCarlo(durations, settings, N = 1000): DurationAnalysis {
         percentile(simulations, 0.75)
       ],
     },
-    velocity: 0
+    basis: 'TEAM',
+    velocity: velocity
   }
 }
 

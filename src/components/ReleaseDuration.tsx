@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { analyzeRelease } from '../data/analyzeEstimateData'
-import { loadReleaseAnalysisData } from '../data/loadEstimationData'
+import { loadReleaseAnalysisData } from '../data/loaders/release'
 import { FeedbackTooltip } from './FeedbackTooltip'
 import { Parameters } from './Parameters'
 import useDeepCompareEffect from 'use-deep-compare-effect'

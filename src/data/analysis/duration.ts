@@ -48,18 +48,21 @@ export function analyzeDuration(record: Aha.RecordUnion, performance: Performanc
   }
 
   // Use assignee velocity iff available, avg individual throughput if not
-  let velocity
+  let velocity, basis: DurationAnalysis['basis']
   if (performance) {
     const assignee = record.assignedToUser
     if (performance.velocity.teamMember && assignee) {
       velocity = performance.velocity.teamMember[assignee.id]
+      basis = 'ASSIGNEE'
     }
     
     if (!velocity) {
       velocity = performance.velocity.individual
+      basis = 'TEAM'
     }
   } else {
     velocity = settings.defaultVelocity
+    basis = 'DEFAULT'
   }
 
   if (!velocity) {
@@ -68,6 +71,7 @@ export function analyzeDuration(record: Aha.RecordUnion, performance: Performanc
 
   return {
     velocity,
+    basis,
     initial: forecast(initialEstimate, uncertainty, velocity, settings),
     remaining: forecast(remainingEstimate, uncertainty, velocity, settings)
   }

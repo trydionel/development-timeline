@@ -22,14 +22,7 @@
           "recordTypes": [
             "Epic",
             "Feature",
-            "Requirement"
-          ]
-        },
-        "releaseDuration": {
-          "title": "Timeline",
-          "entryPoint": "src/views/releaseDuration.js",
-          "host": "attribute",
-          "recordTypes": [
+            "Requirement",
             "Release"
           ]
         }
