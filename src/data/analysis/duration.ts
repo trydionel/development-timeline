@@ -1,5 +1,15 @@
 import { statistics } from "./statistical"
 
+const COMPLETED_STATUS_CATEGORIES = ['ALREADY_EXISTS', 'DONE', 'SHIPPED', 'WONT_DO']
+
+function points(value): Aha.Estimate {
+  return {
+    value,
+    text: `${value}p`,
+    units: 'POINTS'
+  }
+}
+
 function forecast(estimate, uncertainty, velocity, settings): ForecastAnalysis {
   const mean = estimate.value / velocity
   let ideal, projected, model: ForecastAnalysis['model']
@@ -39,12 +49,12 @@ export function analyzeDuration(record: Aha.RecordUnion, performance: Performanc
   }
 
   if (!initialEstimate.value) {
-    initialEstimate = {
-      value: settings.defaultEstimate,
-      units: 'POINTS',
-      text: `${settings.defaultEstimate}p`
-    }
+    initialEstimate = points(settings.defaultEstimate)
     remainingEstimate = initialEstimate
+  }
+
+  if (COMPLETED_STATUS_CATEGORIES.includes(record.workflowStatus.internalMeaning)) {
+    remainingEstimate = points(0)
   }
 
   // Use assignee velocity iff available, avg individual throughput if not

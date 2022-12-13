@@ -22,6 +22,9 @@ export const CommonRecordFragment = `
   teamWorkflowStatus {
     internalMeaning
   }
+  workflowStatus {
+    internalMeaning
+  }
 `
 
 const RecordAnalysisQuery = (typeField) => `
