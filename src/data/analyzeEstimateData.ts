@@ -38,7 +38,7 @@ export function analyzeFeature(data: FeatureDataResponse, settings: RecordAnalys
     const durations = data.requirements.map(req => {
       const teamId = req.teamId
       return analyzeDuration(req, performance[teamId], settings)
-    })
+    }).filter(duration => duration.remaining.ideal > 0)
     duration = monteCarlo(durations, settings)
   } else {
     duration = analyzeDuration(record, performance[record.teamId], settings)
@@ -78,7 +78,7 @@ export function analyzeRelease(data: ReleaseDataRespose, settings: ReleaseAnalys
   const durations = data.features.map(f => {
     const teamId = f.teamId
     return analyzeDuration(f, performance[teamId], settings)
-  })
+  }).filter(duration => duration.remaining.ideal > 0)
 
   // Monte Carlo simulation!
   const duration = monteCarlo(durations, settings)

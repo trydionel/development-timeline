@@ -50,6 +50,11 @@ export function simulatePlanning(durations: DurationAnalysis[], settings: Releas
     const minPlan = Math.min(...plans)
     const assigneeIndex = plans.findIndex(p => Math.abs(p - minPlan) < 0.00001) // wheee floating points
 
+    if (assigneeIndex === -1) {
+      console.error(duration, plans, minPlan)
+      throw new Error('Unable to allocate work to an individual')
+    }
+
     // Sample a completion time for the record
     let sample
     if (settings.fancyMath) {
@@ -70,10 +75,6 @@ export function simulatePlanning(durations: DurationAnalysis[], settings: Releas
     }
 
     // Allocate it to the assignee that will end up with the minimal time spent
-    if (assigneeIndex === -1) {
-      console.error(duration, plans, minPlan)
-      throw new Error('Unable to allocate work to an individual')
-    }
     plans[assigneeIndex] += sample
   })
 

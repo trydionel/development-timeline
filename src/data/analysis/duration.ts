@@ -15,11 +15,18 @@ function forecast(estimate, uncertainty, velocity, settings): ForecastAnalysis {
   let ideal, projected, model: ForecastAnalysis['model']
 
   if (settings.fancyMath) {
-    const stats = statistics(mean, uncertainty * mean) // Interpretation: 68% of records are completed within +/- (uncertainty * mean)
-
     model = 'LOGNORMAL'
-    ideal = stats.median
-    projected = stats.iqr
+
+    // This model can't handle zeros. If the estimate is zero, forcibly output 0 duration
+    if (estimate.value > 0) {
+      const stats = statistics(mean, uncertainty * mean) // Interpretation: 68% of records are completed within +/- (uncertainty * mean)
+
+      ideal = stats.median
+      projected = stats.iqr
+    } else {
+      ideal = 0
+      projected = [0, 0]
+    }
   } else {
     const lower = (estimate.value * (1 - uncertainty)) / velocity
     const upper = (estimate.value * (1 + uncertainty)) / velocity
