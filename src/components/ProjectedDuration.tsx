@@ -93,8 +93,6 @@ export const ProjectedDuration = ({ record, settings }: ProjectedDurationProps) 
             </div>
           </div>
         </div>
-
-        <FeedbackTooltip />
       </div>
 
       <Parameters defaultValue={parameters} onChange={updateAnalysis} />

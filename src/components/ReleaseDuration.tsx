@@ -82,8 +82,6 @@ export const ReleaseDuration = ({ record, settings }: ReleaseDurationProps) => {
         <RiskBadge risk={analysis.date.risk} />
         &nbsp;
         { Math.abs(analysis.date.daysRemaining) } business days { analysis.date.daysRemaining < 0 ? 'since' : 'til' } target date
-
-        <FeedbackTooltip />
       </div>
 
       <Parameters defaultValue={parameters} onChange={updateAnalysis} />

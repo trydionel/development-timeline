@@ -100,10 +100,6 @@ export const FeatureDuration = ({ record, settings }: FeatureDurationProps) => {
       </div>
 
       <Parameters defaultValue={parameters} onChange={updateAnalysis} />
-
-      <div className="ml-2 my-1">
-        <FeedbackTooltip />
-      </div>
     </>
   )
 }

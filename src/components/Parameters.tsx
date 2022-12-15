@@ -1,6 +1,7 @@
 import format from 'date-fns/format'
 import React, { useState } from 'react'
 import useDeepCompareEffect from 'use-deep-compare-effect'
+import { FeedbackTooltip } from './FeedbackTooltip'
 
 interface ParameterProps {
   defaultValue: AnalysisSettingsUnion
@@ -28,7 +29,12 @@ export const Parameters = ({ defaultValue, onChange }: ParameterProps) => {
 
   return (
     <details className="my-4" style={{ backgroundColor: 'var(--theme-container-background	)', padding: 8, borderRadius: 2 }}>
-      <summary><strong>Parameters</strong></summary>
+      <summary>
+        <aha-flex justify-content='space-between'>
+          <strong>Parameters</strong>
+          <FeedbackTooltip />
+        </aha-flex>
+      </summary>
       <div className="mt-4">
         <aha-field layout="vertical">
           <div slot="label">Estimation uncertainty</div>
