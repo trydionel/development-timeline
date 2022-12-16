@@ -52,6 +52,7 @@ export function analyzeDuration(record: Aha.RecordUnion, performance: Performanc
   let initialEstimate = record.originalEstimate
   if (!initialEstimate.value) {
     initialEstimate = record.initialEstimate
+    remainingEstimate = initialEstimate
     uncertainty *= 2
   }
 
