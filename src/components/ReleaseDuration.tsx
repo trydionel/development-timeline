@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { analyzeRelease } from '../data/analyzeEstimateData'
 import { loadReleaseAnalysisData } from '../data/loaders/release'
-import { FeedbackTooltip } from './FeedbackTooltip'
 import { Parameters } from './Parameters'
 import useDeepCompareEffect from 'use-deep-compare-effect'
 import { RiskBadge } from './RiskBadge'
@@ -79,9 +78,14 @@ export const ReleaseDuration = ({ record, settings }: ReleaseDurationProps) => {
           </div>
         </div>
 
-        <RiskBadge risk={analysis.date.risk} />
-        &nbsp;
-        { Math.abs(analysis.date.daysRemaining) } business days { analysis.date.daysRemaining < 0 ? 'since' : 'til' } target date
+        {analysis.date.target ?
+          <>
+            <RiskBadge risk={analysis.date.risk} />
+            &nbsp;
+            {Math.abs(analysis.date.daysRemaining)} business days {analysis.date.daysRemaining < 0 ? 'since' : 'til'} target date
+          </> :
+          ''
+        }
       </div>
 
       <Parameters defaultValue={parameters} onChange={updateAnalysis} />
