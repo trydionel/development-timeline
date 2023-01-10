@@ -40,7 +40,7 @@ It provides these contributions:
 
 **Note: In order to install an extension into your Aha! Develop account, you must be an account administrator.**
 
-Install the Estimate analysis extension by clicking [here](https://secure.aha.io/settings/account/extensions/install?url=https://github.com/trydionel/development-timeline/releases/download/v0.3.3/jeff-at-aha.development-timeline-v0.3.3.gz).
+Install the Estimate analysis extension by clicking [here](https://secure.aha.io/settings/account/extensions/install?url=https://github.com/trydionel/development-timeline/releases/download/v0.3.4/jeff-at-aha.development-timeline-v0.3.4.gz).
 
 ## Working on the extension
 
